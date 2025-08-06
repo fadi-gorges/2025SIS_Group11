@@ -1,28 +1,45 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { BookIcon } from 'lucide-react'
+import { NotebookPenIcon } from 'lucide-react'
+import Link from 'next/link'
 
-const LoginForm = ({ className, ...props }: React.ComponentProps<'div'>) => {
+type AuthFormProps = {
+  type: 'login' | 'signup'
+} & React.ComponentProps<'div'>
+
+const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
   return (
     <div className={cn('flex w-full max-w-sm flex-col gap-6', className)} {...props}>
       <form>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2">
-            <a href="#" className="flex flex-col items-center gap-2 font-medium">
+            <Link href="/" className="flex flex-col items-center gap-2 font-medium">
               <div className="flex size-8 items-center justify-center rounded-md">
-                <BookIcon className="size-6" />
+                <NotebookPenIcon className="size-6" />
               </div>
               <span className="sr-only">StudyPlanner</span>
-            </a>
+            </Link>
             <h1 className="text-xl font-bold">Welcome to StudyPlanner</h1>
-            <div className="text-center text-sm">
-              Don&apos;t have an account?{' '}
-              <a href="#" className="underline underline-offset-4">
-                Sign up
-              </a>
-            </div>
+            {type === 'login' && (
+              <div className="text-center text-sm">
+                Don&apos;t have an account?{' '}
+                <Link href="/signup" className="underline underline-offset-4">
+                  Sign up
+                </Link>
+              </div>
+            )}
+            {type === 'signup' && (
+              <div className="text-center text-sm">
+                Already have an account?{' '}
+                <Link href="/login" className="underline underline-offset-4">
+                  Login
+                </Link>
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-6">
             <div className="grid gap-3">
@@ -51,4 +68,4 @@ const LoginForm = ({ className, ...props }: React.ComponentProps<'div'>) => {
   )
 }
 
-export default LoginForm
+export default AuthForm

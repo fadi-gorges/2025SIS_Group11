@@ -1,7 +1,9 @@
 /**
- * Validation utilities for the study planner application
- * These functions mirror the validation logic from the old PayloadCMS implementation
+ * Validation schemas for the study planner application
+ * Using Zod for type-safe validation with greatly simplified logic
  */
+
+import { z } from 'zod'
 
 // Validation constants
 export const VALIDATION_LIMITS = {
@@ -40,40 +42,239 @@ export const VALID_ASSESSMENT_ICONS = [
   '🎭', // Performance/Drama
 ] as const
 
-/**
- * Validate subject name
- */
-export function validateSubjectName(name: string): { isValid: boolean; error?: string } {
-  if (!name || name.trim().length === 0) {
-    return { isValid: false, error: 'Subject name is required' }
-  }
+// =============================================================================
+// ZOD VALIDATION SCHEMAS
+// =============================================================================
 
-  if (name.length > VALIDATION_LIMITS.SUBJECT_NAME_MAX_LENGTH) {
+/**
+ * Subject validation schemas
+ */
+export const subjectNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Subject name is required')
+  .max(
+    VALIDATION_LIMITS.SUBJECT_NAME_MAX_LENGTH,
+    `Subject name must be no more than ${VALIDATION_LIMITS.SUBJECT_NAME_MAX_LENGTH} characters`,
+  )
+
+export const subjectCodeSchema = z
+  .string()
+  .trim()
+  .max(
+    VALIDATION_LIMITS.SUBJECT_CODE_MAX_LENGTH,
+    `Subject code must be no more than ${VALIDATION_LIMITS.SUBJECT_CODE_MAX_LENGTH} characters`,
+  )
+  .optional()
+
+export const subjectDescriptionSchema = z
+  .string()
+  .trim()
+  .max(
+    VALIDATION_LIMITS.SUBJECT_DESCRIPTION_MAX_LENGTH,
+    `Description must be no more than ${VALIDATION_LIMITS.SUBJECT_DESCRIPTION_MAX_LENGTH} characters`,
+  )
+  .optional()
+
+export const subjectTermSchema = z
+  .string()
+  .trim()
+  .max(
+    VALIDATION_LIMITS.SUBJECT_TERM_MAX_LENGTH,
+    `Term must be no more than ${VALIDATION_LIMITS.SUBJECT_TERM_MAX_LENGTH} characters`,
+  )
+  .optional()
+
+export const coordinatorNameSchema = z
+  .string()
+  .trim()
+  .max(
+    VALIDATION_LIMITS.COORDINATOR_NAME_MAX_LENGTH,
+    `Coordinator name must be no more than ${VALIDATION_LIMITS.COORDINATOR_NAME_MAX_LENGTH} characters`,
+  )
+  .optional()
+
+/**
+ * Assessment validation schemas
+ */
+export const assessmentNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Assessment name is required')
+  .max(
+    VALIDATION_LIMITS.ASSESSMENT_NAME_MAX_LENGTH,
+    `Assessment name must be no more than ${VALIDATION_LIMITS.ASSESSMENT_NAME_MAX_LENGTH} characters`,
+  )
+
+export const assessmentWeightSchema = z
+  .number()
+  .min(VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MIN, `Weight must be at least ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MIN}`)
+  .max(
+    VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX,
+    `Weight must be no more than ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX}`,
+  )
+
+export const assessmentDescriptionSchema = z
+  .string()
+  .trim()
+  .max(
+    VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH,
+    `Task description must be no more than ${VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH} characters`,
+  )
+  .optional()
+
+export const assessmentIconSchema = z.enum(VALID_ASSESSMENT_ICONS, {
+  message: 'Invalid icon selected. Please choose from the available options.',
+})
+
+export const assessmentContributionSchema = z.enum(['individual', 'group'], {
+  message: 'Invalid contribution selected. Please choose from the available options.',
+})
+
+/**
+ * Grade validation schema
+ */
+export const gradeSchema = z
+  .number()
+  .min(VALIDATION_LIMITS.GRADE_MIN, `Grade must be at least ${VALIDATION_LIMITS.GRADE_MIN}`)
+  .max(VALIDATION_LIMITS.GRADE_MAX, `Grade must be no more than ${VALIDATION_LIMITS.GRADE_MAX}`)
+
+export const gradeNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Grade name is required')
+  .max(
+    VALIDATION_LIMITS.GRADE_NAME_MAX_LENGTH,
+    `Grade name must be no more than ${VALIDATION_LIMITS.GRADE_NAME_MAX_LENGTH} characters`,
+  )
+
+/**
+ * Task validation schema
+ */
+export const taskNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Task name is required')
+  .max(
+    VALIDATION_LIMITS.TASK_NAME_MAX_LENGTH,
+    `Task name must be no more than ${VALIDATION_LIMITS.TASK_NAME_MAX_LENGTH} characters`,
+  )
+
+export const taskDescriptionSchema = z
+  .string()
+  .trim()
+  .max(
+    VALIDATION_LIMITS.TASK_DESCRIPTION_MAX_LENGTH,
+    `Task description must be no more than ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX_LENGTH} characters`,
+  )
+  .optional()
+
+export const taskStatusSchema = z.enum(['todo', 'doing', 'done'])
+
+export const taskPrioritySchema = z.enum(['none', 'low', 'medium', 'high'])
+
+/**
+ * Email validation schema (optional)
+ */
+export const emailSchema = z.email('Please enter a valid email address').optional().or(z.literal(''))
+
+/**
+ * Date validation schema
+ */
+export const futureDateSchema = z
+  .number()
+  .refine((date) => date >= Date.now(), {
+    message: 'Date cannot be in the past',
+  })
+  .optional()
+
+export const dateSchema = z.number().optional()
+
+// =============================================================================
+// COMPOSITE SCHEMAS
+// =============================================================================
+
+/**
+ * Complete subject schema
+ */
+export const subjectSchema = z.object({
+  name: subjectNameSchema,
+  code: subjectCodeSchema,
+  description: subjectDescriptionSchema,
+  term: subjectTermSchema,
+  coordinatorName: coordinatorNameSchema,
+  coordinatorEmail: emailSchema,
+})
+
+/**
+ * Complete assessment schema
+ */
+export const assessmentSchema = z.object({
+  name: assessmentNameSchema,
+  icon: assessmentIconSchema,
+  contribution: assessmentContributionSchema,
+  weight: assessmentWeightSchema,
+  description: assessmentDescriptionSchema,
+  dueDate: dateSchema,
+})
+
+/**
+ * Complete grade schema
+ */
+export const assessmentGradeSchema = z.object({
+  name: gradeNameSchema,
+  grade: gradeSchema,
+})
+
+/**
+ * Complete assessment task schema
+ */
+export const assessmentTaskSchema = z.object({
+  name: taskNameSchema,
+  description: taskDescriptionSchema,
+  status: taskStatusSchema,
+  priority: taskPrioritySchema,
+  reminder: z.number().optional(),
+})
+
+// =============================================================================
+// VALIDATION HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Generic validation function that returns the old format for backward compatibility
+ */
+export function validateWithSchema<T>(
+  schema: z.ZodSchema<T>,
+  data: unknown,
+): { isValid: false; error?: string } | { isValid: true; data: T } {
+  const result = schema.safeParse(data)
+
+  if (result.success) {
+    return { isValid: true, data: result.data }
+  } else {
     return {
       isValid: false,
-      error: `Subject name must be no more than ${VALIDATION_LIMITS.SUBJECT_NAME_MAX_LENGTH} characters`,
+      error: result.error.issues[0]?.message || 'Validation failed',
     }
   }
-
-  return { isValid: true }
 }
 
 /**
- * Validate assessment weight
- * Includes logic to check total weight across assessments in a subject
+ * Validate assessment weight with total weight check
  */
 export function validateWeight(
   weight: number,
   existingWeights: number[] = [],
   excludeCurrentWeight: boolean = false,
 ): { isValid: boolean; error?: string } {
-  if (weight < VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MIN || weight > VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX) {
-    return {
-      isValid: false,
-      error: `Weight must be between ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MIN} and ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX}`,
-    }
+  // First validate the weight itself
+  const weightResult = validateWithSchema(assessmentWeightSchema, weight)
+  if (!weightResult.isValid) {
+    return weightResult
   }
 
+  // Then check total weight
   const totalExistingWeight = existingWeights.reduce((sum, w) => sum + w, 0)
   const newTotal = excludeCurrentWeight ? totalExistingWeight + weight : totalExistingWeight + weight
 
@@ -87,110 +288,8 @@ export function validateWeight(
   return { isValid: true }
 }
 
-/**
- * Validate grade value
- */
-export function validateGrade(grade: number): { isValid: boolean; error?: string } {
-  if (grade < VALIDATION_LIMITS.GRADE_MIN || grade > VALIDATION_LIMITS.GRADE_MAX) {
-    return {
-      isValid: false,
-      error: `Grade must be between ${VALIDATION_LIMITS.GRADE_MIN} and ${VALIDATION_LIMITS.GRADE_MAX}`,
-    }
-  }
-
-  return { isValid: true }
-}
-
-/**
- * Validate assessment icon
- */
-export function validateAssessmentIcon(icon: string): { isValid: boolean; error?: string } {
-  if (!(VALID_ASSESSMENT_ICONS as readonly string[]).includes(icon)) {
-    return {
-      isValid: false,
-      error: 'Invalid icon selected. Please choose from the available options.',
-    }
-  }
-
-  return { isValid: true }
-}
-
-/**
- * Validate email format (basic validation)
- */
-export function validateEmail(email: string): { isValid: boolean; error?: string } {
-  if (!email || email.trim().length === 0) {
-    return { isValid: true } // Email is optional
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
-    return {
-      isValid: false,
-      error: 'Please enter a valid email address',
-    }
-  }
-
-  return { isValid: true }
-}
-
-/**
- * Validate text field with length limits
- */
-export function validateTextField(
-  value: string | undefined,
-  fieldName: string,
-  maxLength: number,
-  required: boolean = false,
-): { isValid: boolean; error?: string } {
-  if (required && (!value || value.trim().length === 0)) {
-    return { isValid: false, error: `${fieldName} is required` }
-  }
-
-  if (value && value.length > maxLength) {
-    return {
-      isValid: false,
-      error: `${fieldName} must be no more than ${maxLength} characters`,
-    }
-  }
-
-  return { isValid: true }
-}
-
-/**
- * Validate date is not in the past (optional check for due dates)
- */
-export function validateFutureDate(
-  date: number | undefined,
-  allowPast: boolean = true,
-): { isValid: boolean; error?: string } {
-  if (!date) {
-    return { isValid: true } // Date is optional
-  }
-
-  if (!allowPast && date < Date.now()) {
-    return {
-      isValid: false,
-      error: 'Date cannot be in the past',
-    }
-  }
-
-  return { isValid: true }
-}
-
-/**
- * Sanitize and trim string input
- */
-export function sanitizeString(value: string | undefined): string | undefined {
-  if (!value) return undefined
-  const trimmed = value.trim()
-  return trimmed.length === 0 ? undefined : trimmed
-}
-
-/**
- * Type for validation result
- */
-export type ValidationResult = {
-  isValid: boolean
-  error?: string
-}
+// Export types for TypeScript
+export type SubjectData = z.infer<typeof subjectSchema>
+export type AssessmentData = z.infer<typeof assessmentSchema>
+export type AssessmentGradeData = z.infer<typeof assessmentGradeSchema>
+export type AssessmentTaskData = z.infer<typeof assessmentTaskSchema>

@@ -1,46 +1,29 @@
 import { v } from 'convex/values'
-import { Doc } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
-
-// Assessment validation constants
-const ASSESSMENT_NAME_MAX_LENGTH = 75
-const ASSESSMENT_TASK_MAX_LENGTH = 2000
-
-// Valid assessment icons
-const VALID_ICONS = ['📝', '📚', '🎤', '💻', '🎨', '🧪', '🌐', '🎭'] as const
-type ValidIcon = (typeof VALID_ICONS)[number]
+import { assessmentFields, assessmentObject } from './schema'
+import { assessmentSchema, validateWeight, validateWithSchema } from './validation'
 
 /**
  * Create a new assessment
  */
 export const createAssessment = mutation({
   args: {
-    name: v.string(),
-    icon: v.string(),
-    contribution: v.union(v.literal('individual'), v.literal('group')),
-    weight: v.number(),
-    task: v.optional(v.string()),
-    dueDate: v.optional(v.number()),
-    userId: v.id('users'),
-    subjectId: v.id('subjects'),
+    name: assessmentFields.name,
+    icon: assessmentFields.icon,
+    contribution: assessmentFields.contribution,
+    weight: assessmentFields.weight,
+    description: assessmentFields.description,
+    dueDate: assessmentFields.dueDate,
+    userId: assessmentFields.userId,
+    subjectId: assessmentFields.subjectId,
   },
   returns: v.id('assessments'),
   handler: async (ctx, args) => {
-    // Validate input
-    if (args.name.length === 0 || args.name.length > ASSESSMENT_NAME_MAX_LENGTH) {
-      throw new Error(`Assessment name must be between 1 and ${ASSESSMENT_NAME_MAX_LENGTH} characters`)
-    }
+    // Validate input using composite schema
+    const validation = validateWithSchema(assessmentSchema, args)
 
-    if (!VALID_ICONS.includes(args.icon as ValidIcon)) {
-      throw new Error('Invalid icon selected')
-    }
-
-    if (args.weight < 0 || args.weight > 100) {
-      throw new Error('Weight must be between 0 and 100')
-    }
-
-    if (args.task && args.task.length > ASSESSMENT_TASK_MAX_LENGTH) {
-      throw new Error(`Task description must be no more than ${ASSESSMENT_TASK_MAX_LENGTH} characters`)
+    if (!validation.isValid) {
+      throw new Error(validation.error!)
     }
 
     // Check if user and subject exist
@@ -65,20 +48,16 @@ export const createAssessment = mutation({
       .withIndex('by_subject', (q) => q.eq('subjectId', args.subjectId))
       .collect()
 
-    const totalExistingWeight = existingAssessments.reduce((sum, assessment) => sum + assessment.weight, 0)
-    if (totalExistingWeight + args.weight > 100) {
-      throw new Error(`Total weight would exceed 100%. Current total: ${totalExistingWeight}%`)
+    const existingWeights = existingAssessments.map((a) => a.weight)
+    const weightValidation = validateWeight(validation.data.weight, existingWeights)
+    if (!weightValidation.isValid) {
+      throw new Error(weightValidation.error!)
     }
 
     return await ctx.db.insert('assessments', {
-      name: args.name.trim(),
-      icon: args.icon,
-      contribution: args.contribution,
-      weight: args.weight,
-      task: args.task?.trim(),
-      dueDate: args.dueDate,
+      ...validation.data,
       complete: false,
-      showCheckAlert: false,
+      showCheckAlert: true,
       userId: args.userId,
       subjectId: args.subjectId,
     })
@@ -90,25 +69,10 @@ export const createAssessment = mutation({
  */
 export const getAssessmentsByUser = query({
   args: {
-    userId: v.id('users'),
-    includeCompleted: v.optional(v.boolean()),
+    userId: assessmentFields.userId,
+    includeCompleted: v.optional(assessmentFields.complete),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id('assessments'),
-      _creationTime: v.number(),
-      name: v.string(),
-      icon: v.string(),
-      contribution: v.union(v.literal('individual'), v.literal('group')),
-      weight: v.number(),
-      task: v.optional(v.string()),
-      dueDate: v.optional(v.number()),
-      complete: v.boolean(),
-      showCheckAlert: v.boolean(),
-      userId: v.id('users'),
-      subjectId: v.id('subjects'),
-    }),
-  ),
+  returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
     const includeCompleted = args.includeCompleted ?? true
 
@@ -133,25 +97,10 @@ export const getAssessmentsByUser = query({
  */
 export const getAssessmentsBySubject = query({
   args: {
-    subjectId: v.id('subjects'),
-    includeCompleted: v.optional(v.boolean()),
+    subjectId: assessmentFields.subjectId,
+    includeCompleted: v.optional(assessmentFields.complete),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id('assessments'),
-      _creationTime: v.number(),
-      name: v.string(),
-      icon: v.string(),
-      contribution: v.union(v.literal('individual'), v.literal('group')),
-      weight: v.number(),
-      task: v.optional(v.string()),
-      dueDate: v.optional(v.number()),
-      complete: v.boolean(),
-      showCheckAlert: v.boolean(),
-      userId: v.id('users'),
-      subjectId: v.id('subjects'),
-    }),
-  ),
+  returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
     const includeCompleted = args.includeCompleted ?? true
 
@@ -177,27 +126,12 @@ export const getAssessmentsBySubject = query({
  */
 export const getUpcomingAssessments = query({
   args: {
-    userId: v.id('users'),
+    userId: assessmentFields.userId,
     daysAhead: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id('assessments'),
-      _creationTime: v.number(),
-      name: v.string(),
-      icon: v.string(),
-      contribution: v.union(v.literal('individual'), v.literal('group')),
-      weight: v.number(),
-      task: v.optional(v.string()),
-      dueDate: v.optional(v.number()),
-      complete: v.boolean(),
-      showCheckAlert: v.boolean(),
-      userId: v.id('users'),
-      subjectId: v.id('subjects'),
-    }),
-  ),
+  returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
-    const daysAhead = args.daysAhead ?? 7 // Default to 7 days
+    const daysAhead = args.daysAhead ?? 14 // Default to 14 days
     const now = Date.now()
     const futureDate = now + daysAhead * 24 * 60 * 60 * 1000
 
@@ -219,23 +153,7 @@ export const getAssessmentById = query({
   args: {
     assessmentId: v.id('assessments'),
   },
-  returns: v.union(
-    v.object({
-      _id: v.id('assessments'),
-      _creationTime: v.number(),
-      name: v.string(),
-      icon: v.string(),
-      contribution: v.union(v.literal('individual'), v.literal('group')),
-      weight: v.number(),
-      task: v.optional(v.string()),
-      dueDate: v.optional(v.number()),
-      complete: v.boolean(),
-      showCheckAlert: v.boolean(),
-      userId: v.id('users'),
-      subjectId: v.id('subjects'),
-    }),
-    v.null(),
-  ),
+  returns: v.union(assessmentObject, v.null()),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.assessmentId)
   },
@@ -247,14 +165,14 @@ export const getAssessmentById = query({
 export const updateAssessment = mutation({
   args: {
     assessmentId: v.id('assessments'),
-    name: v.optional(v.string()),
-    icon: v.optional(v.string()),
-    contribution: v.optional(v.union(v.literal('individual'), v.literal('group'))),
-    weight: v.optional(v.number()),
-    task: v.optional(v.string()),
-    dueDate: v.optional(v.number()),
-    complete: v.optional(v.boolean()),
-    showCheckAlert: v.optional(v.boolean()),
+    name: v.optional(assessmentFields.name),
+    icon: v.optional(assessmentFields.icon),
+    contribution: v.optional(assessmentFields.contribution),
+    weight: v.optional(assessmentFields.weight),
+    description: v.optional(assessmentFields.description),
+    dueDate: v.optional(assessmentFields.dueDate),
+    complete: v.optional(assessmentFields.complete),
+    showCheckAlert: v.optional(assessmentFields.showCheckAlert),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -263,69 +181,28 @@ export const updateAssessment = mutation({
       throw new Error('Assessment not found')
     }
 
-    const updateData: Partial<Doc<'assessments'>> = {}
-
-    // Validate and update fields
-    if (args.name !== undefined) {
-      if (args.name.length === 0 || args.name.length > ASSESSMENT_NAME_MAX_LENGTH) {
-        throw new Error(`Assessment name must be between 1 and ${ASSESSMENT_NAME_MAX_LENGTH} characters`)
-      }
-      updateData.name = args.name.trim()
+    // Validate using composite schema (only validate fields that are being updated)
+    const validation = validateWithSchema(assessmentSchema.partial(), args)
+    if (!validation.isValid) {
+      throw new Error(validation.error!)
     }
 
-    if (args.icon !== undefined) {
-      if (!VALID_ICONS.includes(args.icon as ValidIcon)) {
-        throw new Error('Invalid icon selected')
-      }
-      updateData.icon = args.icon
-    }
-
-    if (args.contribution !== undefined) {
-      updateData.contribution = args.contribution
-    }
-
-    if (args.weight !== undefined) {
-      if (args.weight < 0 || args.weight > 100) {
-        throw new Error('Weight must be between 0 and 100')
-      }
-
-      // Validate total weight doesn't exceed 100% for the subject
+    // Validate weight if it's being updated
+    if (validation.data.weight !== undefined) {
       const existingAssessments = await ctx.db
         .query('assessments')
         .withIndex('by_subject', (q) => q.eq('subjectId', assessment.subjectId))
         .filter((q) => q.neq(q.field('_id'), args.assessmentId))
         .collect()
 
-      const totalExistingWeight = existingAssessments.reduce((sum, a) => sum + a.weight, 0)
-      if (totalExistingWeight + args.weight > 100) {
-        throw new Error(
-          `Total weight would exceed 100%. Current total without this assessment: ${totalExistingWeight}%`,
-        )
+      const existingWeights = existingAssessments.map((a) => a.weight)
+      const weightValidation = validateWeight(validation.data.weight, existingWeights)
+      if (!weightValidation.isValid) {
+        throw new Error(weightValidation.error!)
       }
-
-      updateData.weight = args.weight
     }
 
-    if (args.task !== undefined) {
-      if (args.task.length > ASSESSMENT_TASK_MAX_LENGTH) {
-        throw new Error(`Task description must be no more than ${ASSESSMENT_TASK_MAX_LENGTH} characters`)
-      }
-      updateData.task = args.task.trim() || undefined
-    }
-
-    if (args.dueDate !== undefined) {
-      updateData.dueDate = args.dueDate
-    }
-
-    if (args.complete !== undefined) {
-      updateData.complete = args.complete
-    }
-
-    if (args.showCheckAlert !== undefined) {
-      updateData.showCheckAlert = args.showCheckAlert
-    }
-
-    await ctx.db.patch(args.assessmentId, updateData)
+    await ctx.db.patch(args.assessmentId, validation.data)
     return null
   },
 })

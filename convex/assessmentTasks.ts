@@ -1,32 +1,20 @@
 import { v } from 'convex/values'
-import { Doc } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
-
-// Task validation constants
-const TASK_NAME_MAX_LENGTH = 100
-const TASK_DESCRIPTION_MAX_LENGTH = 2000
+import { assessmentTaskFields, assessmentTaskObject } from './schema'
+import { assessmentTaskSchema, validateWithSchema } from './validation'
 
 /**
  * Add a task to an assessment
  */
 export const addTask = mutation({
-  args: {
-    assessmentId: v.id('assessments'),
-    name: v.string(),
-    status: v.optional(v.union(v.literal('todo'), v.literal('doing'), v.literal('done'))),
-    priority: v.optional(v.union(v.literal('none'), v.literal('low'), v.literal('medium'), v.literal('high'))),
-    reminder: v.optional(v.number()),
-    description: v.optional(v.string()),
-  },
+  args: assessmentTaskFields,
   returns: v.id('assessmentTasks'),
   handler: async (ctx, args) => {
-    // Validate input
-    if (args.name.length === 0 || args.name.length > TASK_NAME_MAX_LENGTH) {
-      throw new Error(`Task name must be between 1 and ${TASK_NAME_MAX_LENGTH} characters`)
-    }
+    // Validate input using composite schema
+    const validation = validateWithSchema(assessmentTaskSchema, args)
 
-    if (args.description && args.description.length > TASK_DESCRIPTION_MAX_LENGTH) {
-      throw new Error(`Task description must be no more than ${TASK_DESCRIPTION_MAX_LENGTH} characters`)
+    if (!validation.isValid) {
+      throw new Error(validation.error!)
     }
 
     // Check if assessment exists
@@ -36,12 +24,8 @@ export const addTask = mutation({
     }
 
     return await ctx.db.insert('assessmentTasks', {
+      ...validation.data,
       assessmentId: args.assessmentId,
-      name: args.name.trim(),
-      status: args.status ?? 'todo',
-      priority: args.priority ?? 'none',
-      reminder: args.reminder,
-      description: args.description?.trim(),
     })
   },
 })
@@ -51,20 +35,9 @@ export const addTask = mutation({
  */
 export const getTasksByAssessment = query({
   args: {
-    assessmentId: v.id('assessments'),
+    assessmentId: assessmentTaskFields.assessmentId,
   },
-  returns: v.array(
-    v.object({
-      _id: v.id('assessmentTasks'),
-      _creationTime: v.number(),
-      assessmentId: v.id('assessments'),
-      name: v.string(),
-      status: v.union(v.literal('todo'), v.literal('doing'), v.literal('done')),
-      priority: v.union(v.literal('none'), v.literal('low'), v.literal('medium'), v.literal('high')),
-      reminder: v.optional(v.number()),
-      description: v.optional(v.string()),
-    }),
-  ),
+  returns: v.array(assessmentTaskObject),
   handler: async (ctx, args) => {
     return await ctx.db
       .query('assessmentTasks')
@@ -80,20 +53,9 @@ export const getTasksByAssessment = query({
 export const getTasksByUserAndStatus = query({
   args: {
     userId: v.id('users'),
-    status: v.optional(v.union(v.literal('todo'), v.literal('doing'), v.literal('done'))),
+    status: v.optional(assessmentTaskFields.status),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id('assessmentTasks'),
-      _creationTime: v.number(),
-      assessmentId: v.id('assessments'),
-      name: v.string(),
-      status: v.union(v.literal('todo'), v.literal('doing'), v.literal('done')),
-      priority: v.union(v.literal('none'), v.literal('low'), v.literal('medium'), v.literal('high')),
-      reminder: v.optional(v.number()),
-      description: v.optional(v.string()),
-    }),
-  ),
+  returns: v.array(assessmentTaskObject),
   handler: async (ctx, args) => {
     // First get all assessments for the user
     const assessments = await ctx.db
@@ -108,11 +70,7 @@ export const getTasksByUserAndStatus = query({
         .withIndex('by_assessment', (q) => q.eq('assessmentId', assessment._id))
         .collect()
 
-      if (args.status) {
-        tasks.push(...assessmentTasks.filter((task) => task.status === args.status))
-      } else {
-        tasks.push(...assessmentTasks)
-      }
+      tasks.push(...assessmentTasks.filter((task) => (args.status ? task.status === args.status : true)))
     }
 
     // Sort by creation time (newest first)
@@ -126,11 +84,11 @@ export const getTasksByUserAndStatus = query({
 export const updateTask = mutation({
   args: {
     taskId: v.id('assessmentTasks'),
-    name: v.optional(v.string()),
-    status: v.optional(v.union(v.literal('todo'), v.literal('doing'), v.literal('done'))),
-    priority: v.optional(v.union(v.literal('none'), v.literal('low'), v.literal('medium'), v.literal('high'))),
-    reminder: v.optional(v.number()),
-    description: v.optional(v.string()),
+    name: v.optional(assessmentTaskFields.name),
+    status: v.optional(assessmentTaskFields.status),
+    priority: v.optional(assessmentTaskFields.priority),
+    reminder: v.optional(assessmentTaskFields.reminder),
+    description: v.optional(assessmentTaskFields.description),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -139,35 +97,14 @@ export const updateTask = mutation({
       throw new Error('Task not found')
     }
 
-    const updateData: Partial<Doc<'assessmentTasks'>> = {}
+    const validation = validateWithSchema(assessmentTaskSchema.partial(), args)
 
-    if (args.name !== undefined) {
-      if (args.name.length === 0 || args.name.length > TASK_NAME_MAX_LENGTH) {
-        throw new Error(`Task name must be between 1 and ${TASK_NAME_MAX_LENGTH} characters`)
-      }
-      updateData.name = args.name.trim()
+    // Validate using composite schema (only validate fields that are being updated)
+    if (!validation.isValid) {
+      throw new Error(validation.error!)
     }
 
-    if (args.status !== undefined) {
-      updateData.status = args.status
-    }
-
-    if (args.priority !== undefined) {
-      updateData.priority = args.priority
-    }
-
-    if (args.reminder !== undefined) {
-      updateData.reminder = args.reminder
-    }
-
-    if (args.description !== undefined) {
-      if (args.description.length > TASK_DESCRIPTION_MAX_LENGTH) {
-        throw new Error(`Task description must be no more than ${TASK_DESCRIPTION_MAX_LENGTH} characters`)
-      }
-      updateData.description = args.description.trim() || undefined
-    }
-
-    await ctx.db.patch(args.taskId, updateData)
+    await ctx.db.patch(args.taskId, validation.data)
     return null
   },
 })
@@ -192,28 +129,6 @@ export const deleteTask = mutation({
 })
 
 /**
- * Update task status
- */
-export const updateTaskStatus = mutation({
-  args: {
-    taskId: v.id('assessmentTasks'),
-    status: v.union(v.literal('todo'), v.literal('doing'), v.literal('done')),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId)
-    if (!task) {
-      throw new Error('Task not found')
-    }
-
-    await ctx.db.patch(args.taskId, {
-      status: args.status,
-    })
-    return null
-  },
-})
-
-/**
  * Get tasks with upcoming reminders
  */
 export const getUpcomingTaskReminders = query({
@@ -221,20 +136,9 @@ export const getUpcomingTaskReminders = query({
     userId: v.id('users'),
     daysAhead: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id('assessmentTasks'),
-      _creationTime: v.number(),
-      assessmentId: v.id('assessments'),
-      name: v.string(),
-      status: v.union(v.literal('todo'), v.literal('doing'), v.literal('done')),
-      priority: v.union(v.literal('none'), v.literal('low'), v.literal('medium'), v.literal('high')),
-      reminder: v.optional(v.number()),
-      description: v.optional(v.string()),
-    }),
-  ),
+  returns: v.array(assessmentTaskObject),
   handler: async (ctx, args) => {
-    const daysAhead = args.daysAhead ?? 7 // Default to 7 days
+    const daysAhead = args.daysAhead ?? 14 // Default to 14 days
     const now = Date.now()
     const futureDate = now + daysAhead * 24 * 60 * 60 * 1000
 

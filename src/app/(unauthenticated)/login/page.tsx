@@ -1,9 +1,9 @@
-import LoginForm from '@/components/auth/login-form'
+import AuthForm from '@/components/auth/auth-form'
 
 const LoginPage = () => {
   return (
     <div className="flex flex-1 items-center justify-center">
-      <LoginForm />
+      <AuthForm type="login" />
     </div>
   )
 }

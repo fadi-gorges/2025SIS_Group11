@@ -1,48 +1,28 @@
 import { v } from 'convex/values'
-import { Doc } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
-
-// Subject validation constants
-const SUBJECT_NAME_MAX_LENGTH = 75
-const SUBJECT_CODE_MAX_LENGTH = 10
-const SUBJECT_DESCRIPTION_MAX_LENGTH = 2000
-const SUBJECT_TERM_MAX_LENGTH = 25
-const COORDINATOR_NAME_MAX_LENGTH = 100
+import { subjectFields, subjectObject } from './schema'
+import { subjectSchema, validateWithSchema } from './validation'
 
 /**
  * Create a new subject
  */
 export const createSubject = mutation({
   args: {
-    name: v.string(),
-    code: v.optional(v.string()),
-    description: v.optional(v.string()),
-    term: v.optional(v.string()),
-    coordinatorName: v.optional(v.string()),
-    coordinatorEmail: v.optional(v.string()),
-    userId: v.id('users'),
+    name: subjectFields.name,
+    code: subjectFields.code,
+    description: subjectFields.description,
+    term: subjectFields.term,
+    coordinatorName: subjectFields.coordinatorName,
+    coordinatorEmail: subjectFields.coordinatorEmail,
+    userId: subjectFields.userId,
   },
   returns: v.id('subjects'),
   handler: async (ctx, args) => {
-    // Validate input lengths
-    if (args.name.length === 0 || args.name.length > SUBJECT_NAME_MAX_LENGTH) {
-      throw new Error(`Subject name must be between 1 and ${SUBJECT_NAME_MAX_LENGTH} characters`)
-    }
+    // Validate input using composite schema
+    const validation = validateWithSchema(subjectSchema, args)
 
-    if (args.code && args.code.length > SUBJECT_CODE_MAX_LENGTH) {
-      throw new Error(`Subject code must be no more than ${SUBJECT_CODE_MAX_LENGTH} characters`)
-    }
-
-    if (args.description && args.description.length > SUBJECT_DESCRIPTION_MAX_LENGTH) {
-      throw new Error(`Description must be no more than ${SUBJECT_DESCRIPTION_MAX_LENGTH} characters`)
-    }
-
-    if (args.term && args.term.length > SUBJECT_TERM_MAX_LENGTH) {
-      throw new Error(`Term must be no more than ${SUBJECT_TERM_MAX_LENGTH} characters`)
-    }
-
-    if (args.coordinatorName && args.coordinatorName.length > COORDINATOR_NAME_MAX_LENGTH) {
-      throw new Error(`Coordinator name must be no more than ${COORDINATOR_NAME_MAX_LENGTH} characters`)
+    if (!validation.isValid) {
+      throw new Error(validation.error!)
     }
 
     // Check if user exists
@@ -63,12 +43,7 @@ export const createSubject = mutation({
     }
 
     return await ctx.db.insert('subjects', {
-      name: args.name.trim(),
-      code: args.code?.trim(),
-      description: args.description?.trim(),
-      term: args.term?.trim(),
-      coordinatorName: args.coordinatorName?.trim(),
-      coordinatorEmail: args.coordinatorEmail?.trim(),
+      ...validation.data,
       archived: false,
       userId: args.userId,
     })
@@ -80,27 +55,12 @@ export const createSubject = mutation({
  */
 export const getSubjectsByUser = query({
   args: {
-    userId: v.id('users'),
-    includeArchived: v.optional(v.boolean()),
+    userId: subjectFields.userId,
+    includeArchived: v.optional(subjectFields.archived),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id('subjects'),
-      _creationTime: v.number(),
-      name: v.string(),
-      code: v.optional(v.string()),
-      description: v.optional(v.string()),
-      term: v.optional(v.string()),
-      coordinatorName: v.optional(v.string()),
-      coordinatorEmail: v.optional(v.string()),
-      archived: v.boolean(),
-      userId: v.id('users'),
-    }),
-  ),
+  returns: v.array(subjectObject),
   handler: async (ctx, args) => {
-    const includeArchived = args.includeArchived ?? false
-
-    if (includeArchived) {
+    if (args.includeArchived) {
       return await ctx.db
         .query('subjects')
         .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -123,21 +83,7 @@ export const getSubjectById = query({
   args: {
     subjectId: v.id('subjects'),
   },
-  returns: v.union(
-    v.object({
-      _id: v.id('subjects'),
-      _creationTime: v.number(),
-      name: v.string(),
-      code: v.optional(v.string()),
-      description: v.optional(v.string()),
-      term: v.optional(v.string()),
-      coordinatorName: v.optional(v.string()),
-      coordinatorEmail: v.optional(v.string()),
-      archived: v.boolean(),
-      userId: v.id('users'),
-    }),
-    v.null(),
-  ),
+  returns: v.union(subjectObject, v.null()),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.subjectId)
   },
@@ -149,13 +95,13 @@ export const getSubjectById = query({
 export const updateSubject = mutation({
   args: {
     subjectId: v.id('subjects'),
-    name: v.optional(v.string()),
-    code: v.optional(v.string()),
-    description: v.optional(v.string()),
-    term: v.optional(v.string()),
-    coordinatorName: v.optional(v.string()),
-    coordinatorEmail: v.optional(v.string()),
-    archived: v.optional(v.boolean()),
+    name: v.optional(subjectFields.name),
+    code: v.optional(subjectFields.code),
+    description: v.optional(subjectFields.description),
+    term: v.optional(subjectFields.term),
+    coordinatorName: v.optional(subjectFields.coordinatorName),
+    coordinatorEmail: v.optional(subjectFields.coordinatorEmail),
+    archived: v.optional(subjectFields.archived),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -164,65 +110,26 @@ export const updateSubject = mutation({
       throw new Error('Subject not found')
     }
 
-    const updateData: Partial<Doc<'subjects'>> = {}
+    // Validate using composite schema (only validate fields that are being updated)
+    const validation = validateWithSchema(subjectSchema.partial(), args)
+    if (!validation.isValid) {
+      throw new Error(validation.error!)
+    }
 
-    // Validate and update fields
-    if (args.name !== undefined) {
-      if (args.name.length === 0 || args.name.length > SUBJECT_NAME_MAX_LENGTH) {
-        throw new Error(`Subject name must be between 1 and ${SUBJECT_NAME_MAX_LENGTH} characters`)
-      }
-
-      // Check for duplicate name (excluding current subject)
+    // Check for duplicate name (excluding current subject)
+    if (validation.data.name !== undefined) {
       const existingSubject = await ctx.db
         .query('subjects')
         .withIndex('by_user', (q) => q.eq('userId', subject.userId))
-        .filter((q) => q.and(q.eq(q.field('name'), args.name), q.neq(q.field('_id'), args.subjectId)))
+        .filter((q) => q.and(q.eq(q.field('name'), validation.data.name), q.neq(q.field('_id'), args.subjectId)))
         .first()
 
       if (existingSubject) {
         throw new Error('A subject with this name already exists')
       }
-
-      updateData.name = args.name.trim()
     }
 
-    if (args.code !== undefined) {
-      if (args.code.length > SUBJECT_CODE_MAX_LENGTH) {
-        throw new Error(`Subject code must be no more than ${SUBJECT_CODE_MAX_LENGTH} characters`)
-      }
-      updateData.code = args.code.trim() || undefined
-    }
-
-    if (args.description !== undefined) {
-      if (args.description.length > SUBJECT_DESCRIPTION_MAX_LENGTH) {
-        throw new Error(`Description must be no more than ${SUBJECT_DESCRIPTION_MAX_LENGTH} characters`)
-      }
-      updateData.description = args.description.trim() || undefined
-    }
-
-    if (args.term !== undefined) {
-      if (args.term.length > SUBJECT_TERM_MAX_LENGTH) {
-        throw new Error(`Term must be no more than ${SUBJECT_TERM_MAX_LENGTH} characters`)
-      }
-      updateData.term = args.term.trim() || undefined
-    }
-
-    if (args.coordinatorName !== undefined) {
-      if (args.coordinatorName.length > COORDINATOR_NAME_MAX_LENGTH) {
-        throw new Error(`Coordinator name must be no more than ${COORDINATOR_NAME_MAX_LENGTH} characters`)
-      }
-      updateData.coordinatorName = args.coordinatorName.trim() || undefined
-    }
-
-    if (args.coordinatorEmail !== undefined) {
-      updateData.coordinatorEmail = args.coordinatorEmail.trim() || undefined
-    }
-
-    if (args.archived !== undefined) {
-      updateData.archived = args.archived
-    }
-
-    await ctx.db.patch(args.subjectId, updateData)
+    await ctx.db.patch(args.subjectId, validation.data)
     return null
   },
 })
