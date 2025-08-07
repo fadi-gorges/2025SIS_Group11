@@ -10,6 +10,7 @@ import { Loader2, NotebookPenIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { loginSchema, signupSchema, type LoginData, type SignupData } from '../../../convex/validation'
 
 type AuthFormProps = {
@@ -19,7 +20,6 @@ type AuthFormProps = {
 const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
   const { signIn } = useAuthActions()
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const isSignup = type === 'signup'
   const schema = isSignup ? signupSchema : loginSchema
@@ -31,7 +31,6 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
 
   const onSubmit = async (data: LoginData | SignupData) => {
     setIsLoading(true)
-    setError(null)
 
     try {
       if (isSignup) {
@@ -52,7 +51,7 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
       }
     } catch (error) {
       console.error('Auth error:', error)
-      setError(error instanceof Error ? error.message : 'Authentication failed')
+      toast.error('Authentication failed')
     } finally {
       setIsLoading(false)
     }
@@ -60,15 +59,14 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
-    setError(null)
 
     try {
       // Note: Google OAuth would need to be configured in convex/auth.config.ts
       // For now, we'll show an error message
-      setError('Google sign-in is not configured yet')
+      toast.error('Google sign-in is not configured yet')
     } catch (error) {
       console.error('Google sign-in error:', error)
-      setError('Google sign-in failed')
+      toast.error('Google sign-in failed')
     } finally {
       setIsLoading(false)
     }
@@ -164,10 +162,6 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
                     </FormItem>
                   )}
                 />
-              )}
-
-              {error && (
-                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</div>
               )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>

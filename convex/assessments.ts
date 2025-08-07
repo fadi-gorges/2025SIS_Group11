@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { requireAuth, requireAuthAndOwnership } from './auth-helpers'
+import { requireAuth, requireAuthAndOwnership } from './authHelpers'
 import { assessmentFields, assessmentObject } from './schema'
 import { assessmentSchema, validateWeight, validateWithSchema } from './validation'
 

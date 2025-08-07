@@ -3,15 +3,15 @@ import { fetchQuery } from 'convex/nextjs'
 import { redirect } from 'next/navigation'
 import { api } from '../../../convex/_generated/api'
 
-const UnauthenticatedLayout = async ({ children }: { children: React.ReactNode }) => {
+const AuthenticatedLayout = async ({ children }: { children: React.ReactNode }) => {
   const token = await convexAuthNextjsToken()
   const isAuthenticated = await fetchQuery(api.auth.isAuthenticated, {}, { token })
 
-  if (isAuthenticated) {
-    redirect('/')
+  if (!isAuthenticated) {
+    redirect('/login')
   }
 
   return <>{children}</>
 }
 
-export default UnauthenticatedLayout
+export default AuthenticatedLayout
