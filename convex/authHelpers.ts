@@ -14,6 +14,15 @@ export const requireAuth = async (ctx: QueryCtx | MutationCtx): Promise<Id<'user
 }
 
 /**
+ * Get the authenticated user object, throwing an error if not authenticated
+ */
+export const getAuthUser = async (ctx: QueryCtx | MutationCtx): Promise<Doc<'users'> | null> => {
+  const userId = await getAuthUserId(ctx)
+  const user = userId ? await ctx.db.get(userId) : null
+  return user
+}
+
+/**
  * Get a resource and verify it belongs to the authenticated user, with optional null return for queries
  */
 export const requireAuthAndOwnership = async <T extends TableNames, AllowNull extends boolean = false>(

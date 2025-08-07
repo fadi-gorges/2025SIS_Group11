@@ -95,7 +95,6 @@ export const updateTask = mutation({
     }
 
     await ctx.db.patch(args.taskId, validation.data)
-    return null
   },
 })
 
@@ -109,9 +108,7 @@ export const deleteTask = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireAuthAndOwnership(ctx, args.taskId)
-
     await ctx.db.delete(args.taskId)
-    return null
   },
 })
 

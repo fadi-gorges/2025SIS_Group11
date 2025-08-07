@@ -124,7 +124,6 @@ export const updateSubject = mutation({
     }
 
     await ctx.db.patch(args.subjectId, validation.data)
-    return null
   },
 })
 
@@ -172,7 +171,6 @@ export const deleteSubject = mutation({
 
     // Delete the subject
     await ctx.db.delete(args.subjectId)
-    return null
   },
 })
 
@@ -186,10 +184,8 @@ export const toggleSubjectArchive = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const { data: subject } = await requireAuthAndOwnership(ctx, args.subjectId)
-
     await ctx.db.patch(args.subjectId, {
       archived: !subject.archived,
     })
-    return null
   },
 })

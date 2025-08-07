@@ -19,7 +19,9 @@ import type * as assessments from "../assessments.js";
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
 import type * as http from "../http.js";
+import type * as serverUtils from "../serverUtils.js";
 import type * as subjects from "../subjects.js";
+import type * as users from "../users.js";
 import type * as validation from "../validation.js";
 
 /**
@@ -37,7 +39,9 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authHelpers: typeof authHelpers;
   http: typeof http;
+  serverUtils: typeof serverUtils;
   subjects: typeof subjects;
+  users: typeof users;
   validation: typeof validation;
 }>;
 export declare const api: FilterApi<

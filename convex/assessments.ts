@@ -190,7 +190,6 @@ export const updateAssessment = mutation({
     }
 
     await ctx.db.patch(args.assessmentId, validation.data)
-    return null
   },
 })
 
@@ -227,7 +226,6 @@ export const deleteAssessment = mutation({
 
     // Delete the assessment
     await ctx.db.delete(args.assessmentId)
-    return null
   },
 })
 
@@ -245,6 +243,5 @@ export const toggleAssessmentComplete = mutation({
     await ctx.db.patch(args.assessmentId, {
       complete: !assessment.complete,
     })
-    return null
   },
 })

@@ -10,7 +10,7 @@ import { z } from 'zod'
 // Validation constants
 export const VALIDATION_LIMITS = {
   // User limits
-  USER_NAME_MIN_LENGTH: 3,
+  USER_NAME_MIN_LENGTH: 2,
   USER_NAME_MAX_LENGTH: 50,
   USER_PASSWORD_MIN_LENGTH: 8,
 
@@ -37,8 +37,9 @@ export const VALIDATION_LIMITS = {
   TASK_DESCRIPTION_MAX_LENGTH: 2000,
 } as const
 
-// Valid assessment icons (from the original config)
-export const VALID_ASSESSMENT_ICONS = [
+export const reminderSchedule = ['one_week', 'one_day', 'on_the_day'] as const
+
+export const assessmentIcons = [
   '📝', // Writing/Essay
   '📚', // Reading/Study
   '🎤', // Presentation
@@ -48,6 +49,9 @@ export const VALID_ASSESSMENT_ICONS = [
   '🌐', // Web/Online
   '🎭', // Performance/Drama
 ] as const
+
+export const taskStatus = ['todo', 'doing', 'done'] as const
+export const taskPriority = ['none', 'low', 'medium', 'high'] as const
 
 // =============================================================================
 // ZOD VALIDATION SCHEMAS
@@ -59,14 +63,8 @@ export const VALID_ASSESSMENT_ICONS = [
 export const userNameSchema = z
   .string()
   .trim()
-  .min(
-    VALIDATION_LIMITS.USER_NAME_MIN_LENGTH,
-    `Name must be at least ${VALIDATION_LIMITS.USER_NAME_MIN_LENGTH} characters long`,
-  )
-  .max(
-    VALIDATION_LIMITS.USER_NAME_MAX_LENGTH,
-    `Name must be no more than ${VALIDATION_LIMITS.USER_NAME_MAX_LENGTH} characters`,
-  )
+  .min(VALIDATION_LIMITS.USER_NAME_MIN_LENGTH, `Minimum ${VALIDATION_LIMITS.USER_NAME_MIN_LENGTH} characters`)
+  .max(VALIDATION_LIMITS.USER_NAME_MAX_LENGTH, `Maximum ${VALIDATION_LIMITS.USER_NAME_MAX_LENGTH} characters`)
 export const userEmailSchema = z.email('Please enter a valid email address').trim()
 export const userPasswordSchema = z
   .string()
@@ -78,6 +76,7 @@ export const userPasswordSchema = z
   .refine(validator.isStrongPassword, {
     message: `Password must be at least ${VALIDATION_LIMITS.USER_PASSWORD_MIN_LENGTH} characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character`,
   })
+export const userReminderScheduleSchema = z.array(z.enum(reminderSchedule)).optional()
 
 /**
  * Subject validation schemas
@@ -150,7 +149,7 @@ export const assessmentDescriptionSchema = z
     `Task description must be no more than ${VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH} characters`,
   )
   .optional()
-export const assessmentIconSchema = z.enum(VALID_ASSESSMENT_ICONS, {
+export const assessmentIconSchema = z.enum(assessmentIcons, {
   message: 'Invalid icon selected. Please choose from the available options.',
 })
 export const assessmentContributionSchema = z.enum(['individual', 'group'], {
@@ -193,8 +192,8 @@ export const taskDescriptionSchema = z
     `Task description must be no more than ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX_LENGTH} characters`,
   )
   .optional()
-export const taskStatusSchema = z.enum(['todo', 'doing', 'done'])
-export const taskPrioritySchema = z.enum(['none', 'low', 'medium', 'high'])
+export const taskStatusSchema = z.enum(taskStatus)
+export const taskPrioritySchema = z.enum(taskPriority)
 
 // =============================================================================
 // COMPOSITE SCHEMAS
@@ -205,22 +204,34 @@ export const taskPrioritySchema = z.enum(['none', 'low', 'medium', 'high'])
  */
 export const loginSchema = z.object({
   email: userEmailSchema,
-  password: userPasswordSchema,
+  password: z.string().trim().min(1, 'Password is required'),
 })
-export const signupSchema = loginSchema
+
+export const profileFormSchema = z.object({
+  givenName: userNameSchema,
+  familyName: userNameSchema,
+})
+
+export const reminderFormSchema = z.object({
+  reminderSchedule: userReminderScheduleSchema,
+})
+
+export const userSchema = z.object({
+  email: userEmailSchema,
+  password: userPasswordSchema,
+  givenName: userNameSchema,
+  familyName: userNameSchema,
+  reminderSchedule: userReminderScheduleSchema,
+})
+
+export const signupSchema = userSchema
   .extend({
-    name: userNameSchema,
     confirmPassword: z.string().trim(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match.',
     path: ['confirmPassword'],
   })
-export const userSchema = z.object({
-  name: userNameSchema,
-  email: userEmailSchema,
-  password: userPasswordSchema,
-})
 
 /**
  * Complete subject schema
@@ -268,6 +279,8 @@ export const assessmentTaskSchema = z.object({
 // Export types for TypeScript
 export type LoginData = z.infer<typeof loginSchema>
 export type SignupData = z.infer<typeof signupSchema>
+export type ProfileFormData = z.infer<typeof profileFormSchema>
+export type ReminderFormData = z.infer<typeof reminderFormSchema>
 export type UserData = z.infer<typeof userSchema>
 export type SubjectData = z.infer<typeof subjectSchema>
 export type AssessmentData = z.infer<typeof assessmentSchema>

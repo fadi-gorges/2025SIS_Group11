@@ -97,7 +97,6 @@ export const updateGrade = mutation({
     }
 
     await ctx.db.patch(args.gradeId, validation.data)
-    return null
   },
 })
 
@@ -111,8 +110,6 @@ export const deleteGrade = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireAuthAndOwnership(ctx, args.gradeId)
-
     await ctx.db.delete(args.gradeId)
-    return null
   },
 })

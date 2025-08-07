@@ -25,7 +25,7 @@ export const ModeTabs = ({ ...props }: TabsProps) => {
   const { setTheme, theme } = useTheme()
 
   return (
-    <Tabs defaultValue={theme} onValueChange={setTheme} {...props}>
+    <Tabs defaultValue={theme} onValueChange={(value) => setTheme(value)} {...props}>
       <TabsList className="h-11 rounded-full">
         {themes.map((tab) => (
           <TabsTrigger key={tab.theme} value={tab.theme} className="size-10 rounded-full p-0">

@@ -7,6 +7,21 @@ import { v } from 'convex/values'
 // =============================================================================
 
 /**
+ * User field definitions
+ */
+export const userFields = {
+  givenName: v.optional(v.string()),
+  familyName: v.optional(v.string()),
+  image: v.optional(v.string()),
+  email: v.optional(v.string()),
+  emailVerificationTime: v.optional(v.number()),
+  phone: v.optional(v.string()),
+  phoneVerificationTime: v.optional(v.number()),
+  isAnonymous: v.optional(v.boolean()),
+  reminderSchedule: v.optional(v.array(v.union(v.literal('one_week'), v.literal('one_day'), v.literal('on_the_day')))),
+} as const
+
+/**
  * Subject field definitions
  */
 export const subjectFields = {
@@ -62,6 +77,12 @@ export const assessmentTaskFields = {
 /**
  * Complete object schemas with system fields for use in Convex functions
  */
+export const userObject = v.object({
+  _id: v.id('users'),
+  _creationTime: v.number(),
+  ...userFields,
+})
+
 export const subjectObject = v.object({
   _id: v.id('subjects'),
   _creationTime: v.number(),
@@ -95,6 +116,8 @@ export const assessmentTaskObject = v.object({
 // The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
+  // Users table - represents users
+  users: defineTable(userFields),
 
   // Subjects table - represents academic subjects/courses
   subjects: defineTable(subjectFields)

@@ -1,6 +1,6 @@
 ---
-description: Guidelines and best practices for building UI components
-globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+description: Guidelines and best practices for building UI and form components
+alwaysApply: false
 ---
 
 Prefer using arrow functions over function declarations for all functions and components.
