@@ -40,21 +40,23 @@ export const assessmentFields = {
  * Assessment grade field definitions
  */
 export const assessmentGradeFields = {
-  assessmentId: v.id('assessments'),
   name: v.string(),
   grade: v.number(),
+  userId: v.id('users'),
+  assessmentId: v.id('assessments'),
 } as const
 
 /**
  * Assessment task field definitions
  */
 export const assessmentTaskFields = {
-  assessmentId: v.id('assessments'),
   name: v.string(),
   status: v.union(v.literal('todo'), v.literal('doing'), v.literal('done')),
   priority: v.union(v.literal('none'), v.literal('low'), v.literal('medium'), v.literal('high')),
   reminder: v.optional(v.number()),
   description: v.optional(v.string()),
+  userId: v.id('users'),
+  assessmentId: v.id('assessments'),
 } as const
 
 /**
@@ -98,7 +100,8 @@ export default defineSchema({
   subjects: defineTable(subjectFields)
     .index('by_user', ['userId'])
     .index('by_user_and_archived', ['userId', 'archived'])
-    .index('by_name', ['name']),
+    .index('by_name', ['name'])
+    .index('by_user_and_name', ['userId', 'name']),
 
   // Assessments table - represents assignments, exams, projects, etc.
   assessments: defineTable(assessmentFields)
@@ -107,11 +110,17 @@ export default defineSchema({
     .index('by_user_and_subject', ['userId', 'subjectId'])
     .index('by_user_and_complete', ['userId', 'complete'])
     .index('by_due_date', ['dueDate'])
-    .index('by_user_and_due_date', ['userId', 'dueDate']),
+    .index('by_user_and_due_date', ['userId', 'dueDate'])
+    .index('by_subject_and_complete', ['subjectId', 'complete']),
 
   // Assessment grades - represents grades for different criteria within an assessment
-  assessmentGrades: defineTable(assessmentGradeFields).index('by_assessment', ['assessmentId']),
+  assessmentGrades: defineTable(assessmentGradeFields)
+    .index('by_assessment', ['assessmentId'])
+    .index('by_user', ['userId']),
 
   // Assessment tasks - represents subtasks within an assessment
-  assessmentTasks: defineTable(assessmentTaskFields).index('by_assessment', ['assessmentId']),
+  assessmentTasks: defineTable(assessmentTaskFields)
+    .index('by_assessment', ['assessmentId'])
+    .index('by_user', ['userId'])
+    .index('by_user_and_reminder', ['userId', 'reminder']),
 })

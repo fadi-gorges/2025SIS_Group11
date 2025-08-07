@@ -1,0 +1,12 @@
+---
+description: Guidelines and best practices for building zod schemas
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+---
+
+You must use zod for all form validation. Current zod validation schemas are located in `convex/validation.ts`. You can use them or extend them as needed.
+
+Each zod schema field should have a user-friendly validation error message, that can be used in the UI.
+
+Any constant validation limits should be defined in the `VALIDATION_LIMITS` object.
+
+Zod strings should be trimmed.

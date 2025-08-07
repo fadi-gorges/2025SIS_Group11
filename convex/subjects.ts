@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { requireAuth, requireAuthAndOwnership } from './auth-helpers'
 import { subjectFields, subjectObject } from './schema'
 import { subjectSchema, validateWithSchema } from './validation'
 
@@ -14,10 +15,11 @@ export const createSubject = mutation({
     term: subjectFields.term,
     coordinatorName: subjectFields.coordinatorName,
     coordinatorEmail: subjectFields.coordinatorEmail,
-    userId: subjectFields.userId,
   },
   returns: v.id('subjects'),
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
     // Validate input using composite schema
     const validation = validateWithSchema(subjectSchema, args)
 
@@ -25,17 +27,10 @@ export const createSubject = mutation({
       throw new Error(validation.error!)
     }
 
-    // Check if user exists
-    const user = await ctx.db.get(args.userId)
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    // Check for duplicate subject name for this user
+    // Check for duplicate subject name for authenticated user
     const existingSubject = await ctx.db
       .query('subjects')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
-      .filter((q) => q.eq(q.field('name'), args.name))
+      .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', args.name))
       .first()
 
     if (existingSubject) {
@@ -45,7 +40,7 @@ export const createSubject = mutation({
     return await ctx.db.insert('subjects', {
       ...validation.data,
       archived: false,
-      userId: args.userId,
+      userId: userId,
     })
   },
 })
@@ -55,21 +50,22 @@ export const createSubject = mutation({
  */
 export const getSubjectsByUser = query({
   args: {
-    userId: subjectFields.userId,
     includeArchived: v.optional(subjectFields.archived),
   },
   returns: v.array(subjectObject),
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
     if (args.includeArchived) {
       return await ctx.db
         .query('subjects')
-        .withIndex('by_user', (q) => q.eq('userId', args.userId))
+        .withIndex('by_user', (q) => q.eq('userId', userId))
         .order('desc')
         .collect()
     } else {
       return await ctx.db
         .query('subjects')
-        .withIndex('by_user_and_archived', (q) => q.eq('userId', args.userId).eq('archived', false))
+        .withIndex('by_user_and_archived', (q) => q.eq('userId', userId).eq('archived', false))
         .order('desc')
         .collect()
     }
@@ -85,7 +81,8 @@ export const getSubjectById = query({
   },
   returns: v.union(subjectObject, v.null()),
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.subjectId)
+    const { data: subject } = await requireAuthAndOwnership(ctx, args.subjectId, { allowNull: true })
+    return subject
   },
 })
 
@@ -105,10 +102,7 @@ export const updateSubject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const subject = await ctx.db.get(args.subjectId)
-    if (!subject) {
-      throw new Error('Subject not found')
-    }
+    const { data: subject } = await requireAuthAndOwnership(ctx, args.subjectId)
 
     // Validate using composite schema (only validate fields that are being updated)
     const validation = validateWithSchema(subjectSchema.partial(), args)
@@ -120,8 +114,8 @@ export const updateSubject = mutation({
     if (validation.data.name !== undefined) {
       const existingSubject = await ctx.db
         .query('subjects')
-        .withIndex('by_user', (q) => q.eq('userId', subject.userId))
-        .filter((q) => q.and(q.eq(q.field('name'), validation.data.name), q.neq(q.field('_id'), args.subjectId)))
+        .withIndex('by_user_and_name', (q) => q.eq('userId', subject.userId).eq('name', validation.data.name!))
+        .filter((q) => q.neq(q.field('_id'), args.subjectId))
         .first()
 
       if (existingSubject) {
@@ -143,10 +137,7 @@ export const deleteSubject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const subject = await ctx.db.get(args.subjectId)
-    if (!subject) {
-      throw new Error('Subject not found')
-    }
+    await requireAuthAndOwnership(ctx, args.subjectId)
 
     // Delete all assessments for this subject
     const assessments = await ctx.db
@@ -194,10 +185,7 @@ export const toggleSubjectArchive = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const subject = await ctx.db.get(args.subjectId)
-    if (!subject) {
-      throw new Error('Subject not found')
-    }
+    const { data: subject } = await requireAuthAndOwnership(ctx, args.subjectId)
 
     await ctx.db.patch(args.subjectId, {
       archived: !subject.archived,

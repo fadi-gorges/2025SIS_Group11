@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { requireAuth, requireAuthAndOwnership } from './auth-helpers'
 import { assessmentTaskFields, assessmentTaskObject } from './schema'
 import { assessmentTaskSchema, validateWithSchema } from './validation'
 
@@ -17,14 +18,12 @@ export const addTask = mutation({
       throw new Error(validation.error!)
     }
 
-    // Check if assessment exists
-    const assessment = await ctx.db.get(args.assessmentId)
-    if (!assessment) {
-      throw new Error('Assessment not found')
-    }
+    // Check if assessment exists and belongs to user
+    const { userId } = await requireAuthAndOwnership(ctx, args.assessmentId)
 
     return await ctx.db.insert('assessmentTasks', {
       ...validation.data,
+      userId,
       assessmentId: args.assessmentId,
     })
   },
@@ -39,6 +38,9 @@ export const getTasksByAssessment = query({
   },
   returns: v.array(assessmentTaskObject),
   handler: async (ctx, args) => {
+    // Check if assessment belongs to user
+    await requireAuthAndOwnership(ctx, args.assessmentId)
+
     return await ctx.db
       .query('assessmentTasks')
       .withIndex('by_assessment', (q) => q.eq('assessmentId', args.assessmentId))
@@ -52,29 +54,20 @@ export const getTasksByAssessment = query({
  */
 export const getTasksByUserAndStatus = query({
   args: {
-    userId: v.id('users'),
     status: v.optional(assessmentTaskFields.status),
   },
   returns: v.array(assessmentTaskObject),
   handler: async (ctx, args) => {
-    // First get all assessments for the user
-    const assessments = await ctx.db
-      .query('assessments')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
-      .collect()
+    const userId = await requireAuth(ctx)
 
-    const tasks = []
-    for (const assessment of assessments) {
-      const assessmentTasks = await ctx.db
-        .query('assessmentTasks')
-        .withIndex('by_assessment', (q) => q.eq('assessmentId', assessment._id))
-        .collect()
+    let query = ctx.db.query('assessmentTasks').withIndex('by_user', (q) => q.eq('userId', userId))
 
-      tasks.push(...assessmentTasks.filter((task) => (args.status ? task.status === args.status : true)))
+    // Filter by status if provided
+    if (args.status) {
+      query = query.filter((q) => q.eq(q.field('status'), args.status))
     }
 
-    // Sort by creation time (newest first)
-    return tasks.sort((a, b) => b._creationTime - a._creationTime)
+    return await query.order('desc').collect()
   },
 })
 
@@ -92,10 +85,7 @@ export const updateTask = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId)
-    if (!task) {
-      throw new Error('Task not found')
-    }
+    await requireAuthAndOwnership(ctx, args.taskId)
 
     const validation = validateWithSchema(assessmentTaskSchema.partial(), args)
 
@@ -118,10 +108,7 @@ export const deleteTask = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId)
-    if (!task) {
-      throw new Error('Task not found')
-    }
+    await requireAuthAndOwnership(ctx, args.taskId)
 
     await ctx.db.delete(args.taskId)
     return null
@@ -133,39 +120,31 @@ export const deleteTask = mutation({
  */
 export const getUpcomingTaskReminders = query({
   args: {
-    userId: v.id('users'),
     daysAhead: v.optional(v.number()),
   },
   returns: v.array(assessmentTaskObject),
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
     const daysAhead = args.daysAhead ?? 14 // Default to 14 days
     const now = Date.now()
     const futureDate = now + daysAhead * 24 * 60 * 60 * 1000
 
-    // First get all assessments for the user
-    const assessments = await ctx.db
-      .query('assessments')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+    return await ctx.db
+      .query('assessmentTasks')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) =>
+        q.and(
+          q.neq(q.field('status'), 'done'),
+          q.gte(q.field('reminder'), now),
+          q.lte(q.field('reminder'), futureDate),
+        ),
+      )
+      .order('asc') // Order by creation time ascending, then sort by reminder date
       .collect()
-
-    const tasks = []
-    for (const assessment of assessments) {
-      const assessmentTasks = await ctx.db
-        .query('assessmentTasks')
-        .withIndex('by_assessment', (q) => q.eq('assessmentId', assessment._id))
-        .filter((q) =>
-          q.and(
-            q.neq(q.field('status'), 'done'),
-            q.gte(q.field('reminder'), now),
-            q.lte(q.field('reminder'), futureDate),
-          ),
-        )
-        .collect()
-
-      tasks.push(...assessmentTasks)
-    }
-
-    // Sort by reminder date
-    return tasks.sort((a, b) => (a.reminder || 0) - (b.reminder || 0))
+      .then((tasks) =>
+        // Sort by reminder date (earliest first)
+        tasks.sort((a, b) => (a.reminder || 0) - (b.reminder || 0)),
+      )
   },
 })

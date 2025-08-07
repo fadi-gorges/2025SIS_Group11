@@ -1,0 +1,6 @@
+---
+description: Guidelines and best practices for building and using auth
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+---
+
+You must consult the Convex and Convex Auth documentation for all auth related questions.

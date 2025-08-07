@@ -1,3 +1,5 @@
+import validator from 'validator'
+
 /**
  * Validation schemas for the study planner application
  * Using Zod for type-safe validation with greatly simplified logic
@@ -7,6 +9,11 @@ import { z } from 'zod'
 
 // Validation constants
 export const VALIDATION_LIMITS = {
+  // User limits
+  USER_NAME_MIN_LENGTH: 3,
+  USER_NAME_MAX_LENGTH: 50,
+  USER_PASSWORD_MIN_LENGTH: 8,
+
   // Subject limits
   SUBJECT_NAME_MAX_LENGTH: 75,
   SUBJECT_CODE_MAX_LENGTH: 10,
@@ -47,6 +54,32 @@ export const VALID_ASSESSMENT_ICONS = [
 // =============================================================================
 
 /**
+ * User validation schemas
+ */
+export const userNameSchema = z
+  .string()
+  .trim()
+  .min(
+    VALIDATION_LIMITS.USER_NAME_MIN_LENGTH,
+    `Name must be at least ${VALIDATION_LIMITS.USER_NAME_MIN_LENGTH} characters long`,
+  )
+  .max(
+    VALIDATION_LIMITS.USER_NAME_MAX_LENGTH,
+    `Name must be no more than ${VALIDATION_LIMITS.USER_NAME_MAX_LENGTH} characters`,
+  )
+export const userEmailSchema = z.email('Please enter a valid email address').trim()
+export const userPasswordSchema = z
+  .string()
+  .trim()
+  .min(
+    VALIDATION_LIMITS.USER_PASSWORD_MIN_LENGTH,
+    `Password must be at least ${VALIDATION_LIMITS.USER_PASSWORD_MIN_LENGTH} characters long`,
+  )
+  .refine(validator.isStrongPassword, {
+    message: `Password must be at least ${VALIDATION_LIMITS.USER_PASSWORD_MIN_LENGTH} characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character`,
+  })
+
+/**
  * Subject validation schemas
  */
 export const subjectNameSchema = z
@@ -57,7 +90,6 @@ export const subjectNameSchema = z
     VALIDATION_LIMITS.SUBJECT_NAME_MAX_LENGTH,
     `Subject name must be no more than ${VALIDATION_LIMITS.SUBJECT_NAME_MAX_LENGTH} characters`,
   )
-
 export const subjectCodeSchema = z
   .string()
   .trim()
@@ -66,7 +98,6 @@ export const subjectCodeSchema = z
     `Subject code must be no more than ${VALIDATION_LIMITS.SUBJECT_CODE_MAX_LENGTH} characters`,
   )
   .optional()
-
 export const subjectDescriptionSchema = z
   .string()
   .trim()
@@ -75,7 +106,6 @@ export const subjectDescriptionSchema = z
     `Description must be no more than ${VALIDATION_LIMITS.SUBJECT_DESCRIPTION_MAX_LENGTH} characters`,
   )
   .optional()
-
 export const subjectTermSchema = z
   .string()
   .trim()
@@ -84,7 +114,6 @@ export const subjectTermSchema = z
     `Term must be no more than ${VALIDATION_LIMITS.SUBJECT_TERM_MAX_LENGTH} characters`,
   )
   .optional()
-
 export const coordinatorNameSchema = z
   .string()
   .trim()
@@ -93,6 +122,7 @@ export const coordinatorNameSchema = z
     `Coordinator name must be no more than ${VALIDATION_LIMITS.COORDINATOR_NAME_MAX_LENGTH} characters`,
   )
   .optional()
+export const coordinatorEmailSchema = z.email('Please enter a valid email address').optional().or(z.literal(''))
 
 /**
  * Assessment validation schemas
@@ -105,7 +135,6 @@ export const assessmentNameSchema = z
     VALIDATION_LIMITS.ASSESSMENT_NAME_MAX_LENGTH,
     `Assessment name must be no more than ${VALIDATION_LIMITS.ASSESSMENT_NAME_MAX_LENGTH} characters`,
   )
-
 export const assessmentWeightSchema = z
   .number()
   .min(VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MIN, `Weight must be at least ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MIN}`)
@@ -113,7 +142,6 @@ export const assessmentWeightSchema = z
     VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX,
     `Weight must be no more than ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX}`,
   )
-
 export const assessmentDescriptionSchema = z
   .string()
   .trim()
@@ -122,14 +150,13 @@ export const assessmentDescriptionSchema = z
     `Task description must be no more than ${VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH} characters`,
   )
   .optional()
-
 export const assessmentIconSchema = z.enum(VALID_ASSESSMENT_ICONS, {
   message: 'Invalid icon selected. Please choose from the available options.',
 })
-
 export const assessmentContributionSchema = z.enum(['individual', 'group'], {
   message: 'Invalid contribution selected. Please choose from the available options.',
 })
+export const assessmentDueDateSchema = z.number().optional()
 
 /**
  * Grade validation schema
@@ -138,7 +165,6 @@ export const gradeSchema = z
   .number()
   .min(VALIDATION_LIMITS.GRADE_MIN, `Grade must be at least ${VALIDATION_LIMITS.GRADE_MIN}`)
   .max(VALIDATION_LIMITS.GRADE_MAX, `Grade must be no more than ${VALIDATION_LIMITS.GRADE_MAX}`)
-
 export const gradeNameSchema = z
   .string()
   .trim()
@@ -159,7 +185,6 @@ export const taskNameSchema = z
     VALIDATION_LIMITS.TASK_NAME_MAX_LENGTH,
     `Task name must be no more than ${VALIDATION_LIMITS.TASK_NAME_MAX_LENGTH} characters`,
   )
-
 export const taskDescriptionSchema = z
   .string()
   .trim()
@@ -168,31 +193,34 @@ export const taskDescriptionSchema = z
     `Task description must be no more than ${VALIDATION_LIMITS.TASK_DESCRIPTION_MAX_LENGTH} characters`,
   )
   .optional()
-
 export const taskStatusSchema = z.enum(['todo', 'doing', 'done'])
-
 export const taskPrioritySchema = z.enum(['none', 'low', 'medium', 'high'])
-
-/**
- * Email validation schema (optional)
- */
-export const emailSchema = z.email('Please enter a valid email address').optional().or(z.literal(''))
-
-/**
- * Date validation schema
- */
-export const futureDateSchema = z
-  .number()
-  .refine((date) => date >= Date.now(), {
-    message: 'Date cannot be in the past',
-  })
-  .optional()
-
-export const dateSchema = z.number().optional()
 
 // =============================================================================
 // COMPOSITE SCHEMAS
 // =============================================================================
+
+/**
+ * Complete auth schemas
+ */
+export const loginSchema = z.object({
+  email: userEmailSchema,
+  password: userPasswordSchema,
+})
+export const signupSchema = loginSchema
+  .extend({
+    name: userNameSchema,
+    confirmPassword: z.string().trim(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  })
+export const userSchema = z.object({
+  name: userNameSchema,
+  email: userEmailSchema,
+  password: userPasswordSchema,
+})
 
 /**
  * Complete subject schema
@@ -203,7 +231,7 @@ export const subjectSchema = z.object({
   description: subjectDescriptionSchema,
   term: subjectTermSchema,
   coordinatorName: coordinatorNameSchema,
-  coordinatorEmail: emailSchema,
+  coordinatorEmail: coordinatorEmailSchema,
 })
 
 /**
@@ -215,7 +243,7 @@ export const assessmentSchema = z.object({
   contribution: assessmentContributionSchema,
   weight: assessmentWeightSchema,
   description: assessmentDescriptionSchema,
-  dueDate: dateSchema,
+  dueDate: assessmentDueDateSchema,
 })
 
 /**
@@ -236,6 +264,15 @@ export const assessmentTaskSchema = z.object({
   priority: taskPrioritySchema,
   reminder: z.number().optional(),
 })
+
+// Export types for TypeScript
+export type LoginData = z.infer<typeof loginSchema>
+export type SignupData = z.infer<typeof signupSchema>
+export type UserData = z.infer<typeof userSchema>
+export type SubjectData = z.infer<typeof subjectSchema>
+export type AssessmentData = z.infer<typeof assessmentSchema>
+export type AssessmentGradeData = z.infer<typeof assessmentGradeSchema>
+export type AssessmentTaskData = z.infer<typeof assessmentTaskSchema>
 
 // =============================================================================
 // VALIDATION HELPER FUNCTIONS
@@ -276,7 +313,7 @@ export function validateWeight(
 
   // Then check total weight
   const totalExistingWeight = existingWeights.reduce((sum, w) => sum + w, 0)
-  const newTotal = excludeCurrentWeight ? totalExistingWeight + weight : totalExistingWeight + weight
+  const newTotal = excludeCurrentWeight ? totalExistingWeight : totalExistingWeight + weight
 
   if (newTotal > VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX) {
     return {
@@ -287,9 +324,3 @@ export function validateWeight(
 
   return { isValid: true }
 }
-
-// Export types for TypeScript
-export type SubjectData = z.infer<typeof subjectSchema>
-export type AssessmentData = z.infer<typeof assessmentSchema>
-export type AssessmentGradeData = z.infer<typeof assessmentGradeSchema>
-export type AssessmentTaskData = z.infer<typeof assessmentTaskSchema>

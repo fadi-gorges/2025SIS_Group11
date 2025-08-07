@@ -26,6 +26,7 @@ Represents academic subjects/courses that users are enrolled in.
 - `by_user` - Query subjects by user
 - `by_user_and_archived` - Query active/archived subjects by user
 - `by_name` - Query subjects by name
+- `by_user_and_name` - Query subjects by user and name for duplicate checking
 
 ### 2. Assessments (`assessments`)
 
@@ -37,7 +38,7 @@ Represents assignments, exams, projects, and other assessments within subjects.
 - `icon` (string, required) - Assessment icon (one of 📝📚🎤💻🎨🧪🌐🎭)
 - `contribution` ("individual" | "group") - Type of assessment
 - `weight` (number, required) - Assessment weight percentage (0-100)
-- `task` (string, optional) - Task description (max 2000 chars)
+- `description` (string, optional) - Assessment description (max 2000 chars)
 - `dueDate` (number, optional) - Due date timestamp
 - `complete` (boolean) - Whether assessment is completed
 - `showCheckAlert` (boolean) - Whether to show completion alerts
@@ -52,6 +53,7 @@ Represents assignments, exams, projects, and other assessments within subjects.
 - `by_user_and_complete` - Query completed/incomplete assessments by user
 - `by_due_date` - Query assessments by due date
 - `by_user_and_due_date` - Query assessments by user and due date
+- `by_subject_and_complete` - Query assessments by subject and completion status
 
 ### 3. Assessment Grades (`assessmentGrades`)
 
@@ -83,6 +85,8 @@ Represents subtasks/todo items within an assessment.
 **Indexes:**
 
 - `by_assessment` - Query tasks by assessment
+- `by_user` - Query tasks by user
+- `by_user_and_reminder` - Query tasks by user and reminder timestamp
 
 ## API Functions
 
@@ -183,7 +187,7 @@ const assessmentId = await convex.mutation(api.assessments.createAssessment, {
   icon: '💻',
   contribution: 'individual',
   weight: 40,
-  task: 'Build a full-stack React application with authentication and real-time features',
+  description: 'Build a full-stack React application with authentication and real-time features',
   dueDate: new Date('2024-06-15').getTime(),
   userId: currentUser._id,
   subjectId: subjectId,

@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { requireAuthAndOwnership } from './auth-helpers'
 import { assessmentGradeFields, assessmentGradeObject } from './schema'
 import { assessmentGradeSchema, validateWithSchema } from './validation'
 
@@ -7,7 +8,11 @@ import { assessmentGradeSchema, validateWithSchema } from './validation'
  * Add a grade to an assessment
  */
 export const addGrade = mutation({
-  args: assessmentGradeFields,
+  args: {
+    name: assessmentGradeFields.name,
+    grade: assessmentGradeFields.grade,
+    assessmentId: assessmentGradeFields.assessmentId,
+  },
   returns: v.id('assessmentGrades'),
   handler: async (ctx, args) => {
     // Validate input using composite schema
@@ -17,11 +22,8 @@ export const addGrade = mutation({
       throw new Error(validation.error!)
     }
 
-    // Check if assessment exists
-    const assessment = await ctx.db.get(args.assessmentId)
-    if (!assessment) {
-      throw new Error('Assessment not found')
-    }
+    // Check if assessment exists and belongs to user
+    const { userId } = await requireAuthAndOwnership(ctx, args.assessmentId)
 
     // Check for duplicate grade name within the assessment
     const existingGrade = await ctx.db
@@ -36,6 +38,7 @@ export const addGrade = mutation({
 
     return await ctx.db.insert('assessmentGrades', {
       ...validation.data,
+      userId,
       assessmentId: args.assessmentId,
     })
   },
@@ -50,6 +53,9 @@ export const getGradesByAssessment = query({
   },
   returns: v.array(assessmentGradeObject),
   handler: async (ctx, args) => {
+    // Check if assessment belongs to user
+    await requireAuthAndOwnership(ctx, args.assessmentId)
+
     return await ctx.db
       .query('assessmentGrades')
       .withIndex('by_assessment', (q) => q.eq('assessmentId', args.assessmentId))
@@ -69,10 +75,7 @@ export const updateGrade = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const gradeRecord = await ctx.db.get(args.gradeId)
-    if (!gradeRecord) {
-      throw new Error('Grade not found')
-    }
+    const { data: gradeRecord } = await requireAuthAndOwnership(ctx, args.gradeId)
 
     // Validate using composite schema (only validate fields that are being updated)
     const validation = validateWithSchema(assessmentGradeSchema.partial(), args)
@@ -107,10 +110,7 @@ export const deleteGrade = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const grade = await ctx.db.get(args.gradeId)
-    if (!grade) {
-      throw new Error('Grade not found')
-    }
+    await requireAuthAndOwnership(ctx, args.gradeId)
 
     await ctx.db.delete(args.gradeId)
     return null

@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { requireAuth, requireAuthAndOwnership } from './auth-helpers'
 import { assessmentFields, assessmentObject } from './schema'
 import { assessmentSchema, validateWeight, validateWithSchema } from './validation'
 
@@ -14,7 +15,6 @@ export const createAssessment = mutation({
     weight: assessmentFields.weight,
     description: assessmentFields.description,
     dueDate: assessmentFields.dueDate,
-    userId: assessmentFields.userId,
     subjectId: assessmentFields.subjectId,
   },
   returns: v.id('assessments'),
@@ -26,21 +26,8 @@ export const createAssessment = mutation({
       throw new Error(validation.error!)
     }
 
-    // Check if user and subject exist
-    const user = await ctx.db.get(args.userId)
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    const subject = await ctx.db.get(args.subjectId)
-    if (!subject) {
-      throw new Error('Subject not found')
-    }
-
-    // Check if subject belongs to user
-    if (subject.userId !== args.userId) {
-      throw new Error('Subject does not belong to this user')
-    }
+    // Check if subject belongs to authenticated user
+    const { userId } = await requireAuthAndOwnership(ctx, args.subjectId)
 
     // Validate total weight doesn't exceed 100% for the subject
     const existingAssessments = await ctx.db
@@ -58,7 +45,7 @@ export const createAssessment = mutation({
       ...validation.data,
       complete: false,
       showCheckAlert: true,
-      userId: args.userId,
+      userId: userId,
       subjectId: args.subjectId,
     })
   },
@@ -69,23 +56,24 @@ export const createAssessment = mutation({
  */
 export const getAssessmentsByUser = query({
   args: {
-    userId: assessmentFields.userId,
     includeCompleted: v.optional(assessmentFields.complete),
   },
   returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
     const includeCompleted = args.includeCompleted ?? true
 
     if (includeCompleted) {
       return await ctx.db
         .query('assessments')
-        .withIndex('by_user', (q) => q.eq('userId', args.userId))
+        .withIndex('by_user', (q) => q.eq('userId', userId))
         .order('desc')
         .collect()
     } else {
       return await ctx.db
         .query('assessments')
-        .withIndex('by_user_and_complete', (q) => q.eq('userId', args.userId).eq('complete', false))
+        .withIndex('by_user_and_complete', (q) => q.eq('userId', userId).eq('complete', false))
         .order('desc')
         .collect()
     }
@@ -102,6 +90,9 @@ export const getAssessmentsBySubject = query({
   },
   returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
+    // Check if subject belongs to authenticated user
+    await requireAuthAndOwnership(ctx, args.subjectId)
+
     const includeCompleted = args.includeCompleted ?? true
 
     if (includeCompleted) {
@@ -113,8 +104,7 @@ export const getAssessmentsBySubject = query({
     } else {
       return await ctx.db
         .query('assessments')
-        .withIndex('by_subject', (q) => q.eq('subjectId', args.subjectId))
-        .filter((q) => q.eq(q.field('complete'), false))
+        .withIndex('by_subject_and_complete', (q) => q.eq('subjectId', args.subjectId).eq('complete', false))
         .order('desc')
         .collect()
     }
@@ -126,20 +116,19 @@ export const getAssessmentsBySubject = query({
  */
 export const getUpcomingAssessments = query({
   args: {
-    userId: assessmentFields.userId,
     daysAhead: v.optional(v.number()),
   },
   returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
     const daysAhead = args.daysAhead ?? 14 // Default to 14 days
     const now = Date.now()
     const futureDate = now + daysAhead * 24 * 60 * 60 * 1000
 
     return await ctx.db
       .query('assessments')
-      .withIndex('by_user_and_due_date', (q) =>
-        q.eq('userId', args.userId).gte('dueDate', now).lte('dueDate', futureDate),
-      )
+      .withIndex('by_user_and_due_date', (q) => q.eq('userId', userId).gte('dueDate', now).lte('dueDate', futureDate))
       .filter((q) => q.eq(q.field('complete'), false))
       .order('asc')
       .collect()
@@ -155,7 +144,8 @@ export const getAssessmentById = query({
   },
   returns: v.union(assessmentObject, v.null()),
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.assessmentId)
+    const { data: assessment } = await requireAuthAndOwnership(ctx, args.assessmentId, { allowNull: true })
+    return assessment
   },
 })
 
@@ -176,10 +166,7 @@ export const updateAssessment = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const assessment = await ctx.db.get(args.assessmentId)
-    if (!assessment) {
-      throw new Error('Assessment not found')
-    }
+    const { data: assessment } = await requireAuthAndOwnership(ctx, args.assessmentId)
 
     // Validate using composite schema (only validate fields that are being updated)
     const validation = validateWithSchema(assessmentSchema.partial(), args)
@@ -216,10 +203,7 @@ export const deleteAssessment = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const assessment = await ctx.db.get(args.assessmentId)
-    if (!assessment) {
-      throw new Error('Assessment not found')
-    }
+    await requireAuthAndOwnership(ctx, args.assessmentId)
 
     // Delete assessment grades
     const grades = await ctx.db
@@ -256,10 +240,7 @@ export const toggleAssessmentComplete = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const assessment = await ctx.db.get(args.assessmentId)
-    if (!assessment) {
-      throw new Error('Assessment not found')
-    }
+    const { data: assessment } = await requireAuthAndOwnership(ctx, args.assessmentId)
 
     await ctx.db.patch(args.assessmentId, {
       complete: !assessment.complete,
