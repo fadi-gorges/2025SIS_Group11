@@ -1,17 +1,7 @@
-import { convexAuthNextjsToken } from '@convex-dev/auth/nextjs/server'
-import { fetchQuery } from 'convex/nextjs'
-import { redirect } from 'next/navigation'
-import { api } from '../../../convex/_generated/api'
+import AuthRoute from '@/components/auth/auth-route'
 
 const UnauthenticatedLayout = async ({ children }: { children: React.ReactNode }) => {
-  const token = await convexAuthNextjsToken()
-  const isAuthenticated = await fetchQuery(api.auth.isAuthenticated, {}, { token })
-
-  if (isAuthenticated) {
-    redirect('/')
-  }
-
-  return <>{children}</>
+  return <AuthRoute allow="unauthenticated">{children}</AuthRoute>
 }
 
 export default UnauthenticatedLayout

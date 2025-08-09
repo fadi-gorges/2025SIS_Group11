@@ -1,8 +1,20 @@
-import { v } from 'convex/values'
+import { getAuthUserId } from '@convex-dev/auth/server'
+import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { getAuthUser, requireAuth } from './authHelpers'
 import { userFields, userObject } from './schema'
 import { userSchema, validateWithSchema } from './validation'
+
+/**
+ * Check if the user is authenticated
+ */
+export const isAuthenticated = query({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    return !!(await getAuthUserId(ctx))
+  },
+})
 
 /**
  * Get the current logged in user identity
@@ -10,7 +22,7 @@ import { userSchema, validateWithSchema } from './validation'
 export const getCurrentUser = query({
   args: {},
   returns: v.union(v.null(), userObject),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const user = await getAuthUser(ctx)
     return user
   },
@@ -31,7 +43,7 @@ export const updateUser = mutation({
 
     const validation = validateWithSchema(userSchema.partial(), args)
     if (!validation.isValid) {
-      throw new Error(validation.error!)
+      throw new ConvexError(validation.error!)
     }
 
     await ctx.db.patch(userId, validation.data)

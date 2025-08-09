@@ -1,15 +1,13 @@
 'use client'
 
-import { LayoutDashboardIcon, NotebookPenIcon, SettingsIcon } from 'lucide-react'
+import { BookOpenIcon, LayoutDashboardIcon, NotebookPenIcon, SettingsIcon } from 'lucide-react'
 import * as React from 'react'
 
 import { NavMain } from '@/components/sidebar/nav-main'
 import { NavUser } from '@/components/sidebar/nav-user'
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail, useSidebar } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
-import { Preloaded } from 'convex/react'
 import Link from 'next/link'
-import { api } from '../../../convex/_generated/api'
 
 const data = {
   navMain: [
@@ -17,6 +15,12 @@ const data = {
       title: 'Dashboard',
       url: '/',
       icon: LayoutDashboardIcon,
+      isActive: true,
+    },
+    {
+      title: 'Subjects',
+      url: '/subjects',
+      icon: BookOpenIcon,
       isActive: true,
     },
     {
@@ -28,11 +32,7 @@ const data = {
   ],
 }
 
-type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  preloadedUser: Preloaded<typeof api.users.getCurrentUser>
-}
-
-export function AppSidebar({ preloadedUser, ...props }: AppSidebarProps) {
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { open } = useSidebar()
 
   return (
@@ -49,7 +49,7 @@ export function AppSidebar({ preloadedUser, ...props }: AppSidebarProps) {
         {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser preloadedUser={preloadedUser} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

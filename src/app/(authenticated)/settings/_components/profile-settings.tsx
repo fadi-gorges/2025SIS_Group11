@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -23,16 +23,12 @@ const reminderOptions = [
   { value: 'on_the_day' as const, label: 'On the day' },
 ]
 
-type ProfileSettingsProps = {
-  preloadedUser: Preloaded<typeof api.users.getCurrentUser>
-}
-
-const ProfileSettings = ({ preloadedUser }: ProfileSettingsProps) => {
-  const user = usePreloadedQuery(preloadedUser)
+const ProfileSettings = () => {
+  const user = useQuery(api.users.getCurrentUser)
   const updateUser = useMutation(api.users.updateUser)
 
   const profileForm = useForm<ProfileFormData>({
-    resolver: zodResolver(profileFormSchema),
+    resolver: zodResolver(profileFormSchema as any),
     defaultValues: {
       givenName: '',
       familyName: '',
@@ -40,7 +36,7 @@ const ProfileSettings = ({ preloadedUser }: ProfileSettingsProps) => {
   })
 
   const reminderForm = useForm<ReminderFormData>({
-    resolver: zodResolver(reminderFormSchema),
+    resolver: zodResolver(reminderFormSchema as any),
     defaultValues: {
       reminderSchedule: [],
     },

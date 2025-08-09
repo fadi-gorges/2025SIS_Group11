@@ -26,7 +26,7 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
   const schema = isSignup ? signupSchema : loginSchema
 
   const form = useForm<LoginData | SignupData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema as any),
     defaultValues: isSignup
       ? { givenName: '', familyName: '', email: '', password: '', confirmPassword: '' }
       : { email: '', password: '' },
@@ -52,7 +52,7 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
           redirectTo: '/',
         })
       }
-    } catch (error) {
+    } catch {
       toast.error('Please enter a valid email and password')
     } finally {
       setIsLoading(false)

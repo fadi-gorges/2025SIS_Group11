@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
 import { subjectFields, subjectObject } from './schema'
@@ -24,7 +24,7 @@ export const createSubject = mutation({
     const validation = validateWithSchema(subjectSchema, args)
 
     if (!validation.isValid) {
-      throw new Error(validation.error!)
+      throw new ConvexError(validation.error!)
     }
 
     // Check for duplicate subject name for authenticated user
@@ -34,7 +34,7 @@ export const createSubject = mutation({
       .first()
 
     if (existingSubject) {
-      throw new Error('A subject with this name already exists')
+      throw new ConvexError('A subject with this name already exists')
     }
 
     return await ctx.db.insert('subjects', {
@@ -50,25 +50,78 @@ export const createSubject = mutation({
  */
 export const getSubjectsByUser = query({
   args: {
-    includeArchived: v.optional(subjectFields.archived),
+    search: v.optional(v.string()),
+    archived: v.optional(v.union(v.literal('unarchived'), v.literal('archived'), v.literal('all'))),
+    term: v.optional(v.union(v.string(), v.null())),
   },
   returns: v.array(subjectObject),
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx)
 
-    if (args.includeArchived) {
-      return await ctx.db
+    const archivedFilter = args.archived ?? 'unarchived'
+    const hasSearch = !!args.search && args.search.trim().length > 0
+    const hasTerm = args.term !== undefined && args.term !== null && String(args.term).trim().length > 0
+
+    if (hasSearch) {
+      // Use search index for name search with filter constraints
+      let queryBuilder = ctx.db
         .query('subjects')
-        .withIndex('by_user', (q) => q.eq('userId', userId))
-        .order('desc')
-        .collect()
-    } else {
-      return await ctx.db
-        .query('subjects')
-        .withIndex('by_user_and_archived', (q) => q.eq('userId', userId).eq('archived', false))
-        .order('desc')
-        .collect()
+        .withSearchIndex('search_name', (q) => q.search('name', args.search!.trim()).eq('userId', userId))
+
+      if (archivedFilter === 'unarchived') {
+        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('archived'), false))
+      } else if (archivedFilter === 'archived') {
+        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('archived'), true))
+      }
+
+      if (hasTerm) {
+        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('term'), args.term))
+      }
+
+      return await queryBuilder.collect()
     }
+
+    // Non-search path uses regular indexes
+    if (archivedFilter === 'all') {
+      let q = ctx.db
+        .query('subjects')
+        .withIndex('by_user', (qb) => qb.eq('userId', userId))
+        .order('desc')
+      if (hasTerm) {
+        q = q.filter((qb) => qb.eq(qb.field('term'), args.term))
+      }
+      return await q.collect()
+    }
+
+    // archived/unarchived specific
+    let q = ctx.db
+      .query('subjects')
+      .withIndex('by_user_and_archived', (qb) => qb.eq('userId', userId).eq('archived', archivedFilter === 'archived'))
+      .order('desc')
+
+    if (hasTerm) {
+      q = q.filter((qb) => qb.eq(qb.field('term'), args.term))
+    }
+
+    return await q.collect()
+  },
+})
+
+/**
+ * Get available unique terms for the user's subjects
+ */
+export const getUniqueTerms = query({
+  args: {},
+  returns: v.array(v.string()),
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx)
+    const rows = await ctx.db
+      .query('subjects')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+    const terms = Array.from(new Set(rows.map((r) => r.term).filter((t): t is string => !!t)))
+    terms.sort((a, b) => a.localeCompare(b))
+    return terms
   },
 })
 
@@ -107,7 +160,7 @@ export const updateSubject = mutation({
     // Validate using composite schema (only validate fields that are being updated)
     const validation = validateWithSchema(subjectSchema.partial(), args)
     if (!validation.isValid) {
-      throw new Error(validation.error!)
+      throw new ConvexError(validation.error!)
     }
 
     // Check for duplicate name (excluding current subject)
@@ -119,7 +172,7 @@ export const updateSubject = mutation({
         .first()
 
       if (existingSubject) {
-        throw new Error('A subject with this name already exists')
+        throw new ConvexError('A subject with this name already exists')
       }
     }
 

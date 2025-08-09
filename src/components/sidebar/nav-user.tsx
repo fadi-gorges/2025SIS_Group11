@@ -25,17 +25,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar'
 import { useAuthActions } from '@convex-dev/auth/react'
-import { Preloaded, usePreloadedQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { api } from '../../../convex/_generated/api'
 
-type NavUserProps = {
-  preloadedUser: Preloaded<typeof api.users.getCurrentUser>
-}
-
-export function NavUser({ preloadedUser }: NavUserProps) {
-  const user = usePreloadedQuery(preloadedUser)
+export function NavUser() {
+  const user = useQuery(api.users.getCurrentUser)
   const { signOut } = useAuthActions()
 
   const { isMobile } = useSidebar()

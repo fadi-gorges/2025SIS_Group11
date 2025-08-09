@@ -73,7 +73,7 @@ export default function RootLayout({
         <body className={`${geistSans.variable} ${geistMono.variable} relative flex min-h-svh flex-col antialiased`}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <ConvexClientProvider>{children}</ConvexClientProvider>
-            <Toaster richColors closeButton />
+            <Toaster richColors closeButton className="mb-safe-offset-12 md:mb-0" />
           </ThemeProvider>
         </body>
       </html>

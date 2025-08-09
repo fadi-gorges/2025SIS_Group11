@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
 import { assessmentFields, assessmentObject } from './schema'
@@ -23,7 +23,7 @@ export const createAssessment = mutation({
     const validation = validateWithSchema(assessmentSchema, args)
 
     if (!validation.isValid) {
-      throw new Error(validation.error!)
+      throw new ConvexError(validation.error!)
     }
 
     // Check if subject belongs to authenticated user
@@ -38,7 +38,7 @@ export const createAssessment = mutation({
     const existingWeights = existingAssessments.map((a) => a.weight)
     const weightValidation = validateWeight(validation.data.weight, existingWeights)
     if (!weightValidation.isValid) {
-      throw new Error(weightValidation.error!)
+      throw new ConvexError(weightValidation.error!)
     }
 
     return await ctx.db.insert('assessments', {
@@ -171,7 +171,7 @@ export const updateAssessment = mutation({
     // Validate using composite schema (only validate fields that are being updated)
     const validation = validateWithSchema(assessmentSchema.partial(), args)
     if (!validation.isValid) {
-      throw new Error(validation.error!)
+      throw new ConvexError(validation.error!)
     }
 
     // Validate weight if it's being updated
@@ -185,7 +185,7 @@ export const updateAssessment = mutation({
       const existingWeights = existingAssessments.map((a) => a.weight)
       const weightValidation = validateWeight(validation.data.weight, existingWeights)
       if (!weightValidation.isValid) {
-        throw new Error(weightValidation.error!)
+        throw new ConvexError(weightValidation.error!)
       }
     }
 

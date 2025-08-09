@@ -105,7 +105,8 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_user_and_archived', ['userId', 'archived'])
     .index('by_name', ['name'])
-    .index('by_user_and_name', ['userId', 'name']),
+    .index('by_user_and_name', ['userId', 'name'])
+    .searchIndex('search_name', { searchField: 'name', filterFields: ['userId', 'archived', 'term'] }),
 
   // Assessments table - represents assignments, exams, projects, etc.
   assessments: defineTable(assessmentFields)

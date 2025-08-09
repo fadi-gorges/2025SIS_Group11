@@ -1,10 +1,9 @@
-import validator from 'validator'
-
 /**
  * Validation schemas for the study planner application
  * Using Zod for type-safe validation with greatly simplified logic
  */
 
+import validator from 'validator'
 import { z } from 'zod'
 
 // Validation constants

@@ -1,4 +1,5 @@
 import { getAuthUserId } from '@convex-dev/auth/server'
+import { ConvexError } from 'convex/values'
 import { Doc, Id, TableNames } from './_generated/dataModel'
 import { MutationCtx, QueryCtx } from './_generated/server'
 
@@ -8,7 +9,7 @@ import { MutationCtx, QueryCtx } from './_generated/server'
 export const requireAuth = async (ctx: QueryCtx | MutationCtx): Promise<Id<'users'>> => {
   const userId = await getAuthUserId(ctx)
   if (!userId) {
-    throw new Error('User not authenticated')
+    throw new ConvexError('Unauthorized')
   }
   return userId
 }
@@ -43,11 +44,11 @@ export const requireAuthAndOwnership = async <T extends TableNames, AllowNull ex
         data: AllowNull extends true ? Doc<T> | null : Doc<T>
       }
     }
-    throw new Error('Resource not found')
+    throw new ConvexError('Not found')
   }
 
   if (data.userId !== userId) {
-    throw new Error('You do not have permission to access this resource')
+    throw new ConvexError('Forbidden')
   }
 
   return { userId, data }

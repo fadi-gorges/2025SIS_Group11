@@ -1,11 +1,11 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     reactCompiler: true,
   },
-  output: 'standalone'
-};
+  output: 'standalone',
+}
 
-export default nextConfig;
+export default nextConfig

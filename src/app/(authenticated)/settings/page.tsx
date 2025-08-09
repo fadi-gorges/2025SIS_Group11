@@ -5,13 +5,10 @@ import SecuritySettings from '@/app/(authenticated)/settings/_components/securit
 import Heading from '@/components/page/heading'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getPreloadedUser } from '../../../lib/server'
 
 const SettingsPage = async () => {
-  const preloadedUser = await getPreloadedUser()
-
   return (
-    <SidebarPage>
+    <SidebarPage breadcrumb={[{ title: 'Settings', href: '/settings' }]}>
       <div className="space-y-6">
         <Heading title="Settings" description="Manage your account and preferences." />
         <Tabs defaultValue="profile" className="space-y-6">
@@ -22,7 +19,7 @@ const SettingsPage = async () => {
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="space-y-4">
-            <ProfileSettings preloadedUser={preloadedUser} />
+            <ProfileSettings />
           </TabsContent>
           <TabsContent value="notifications" className="space-y-4">
             <NotificationSettings />

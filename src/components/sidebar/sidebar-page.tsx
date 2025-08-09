@@ -1,7 +1,15 @@
 import { ModeToggle } from '@/components/theme/mode-toggle'
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { HomeIcon } from 'lucide-react'
 import Link from 'next/link'
 
 type SidebarPageProps = {
@@ -10,6 +18,23 @@ type SidebarPageProps = {
     title: string
     href: string
   }[]
+}
+
+const BreadcrumbSegment = ({ item, last }: { item: { title: string; href: string }; last: boolean }) => {
+  return !last ? (
+    <>
+      <BreadcrumbItem className="hidden md:block">
+        <BreadcrumbLink asChild>
+          <Link href={item.href}>{item.title}</Link>
+        </BreadcrumbLink>
+      </BreadcrumbItem>
+      <BreadcrumbSeparator className="hidden md:block" />
+    </>
+  ) : (
+    <BreadcrumbItem>
+      <BreadcrumbPage>{item.title}</BreadcrumbPage>
+    </BreadcrumbItem>
+  )
 }
 
 const SidebarPage = ({ children, breadcrumb }: SidebarPageProps) => {
@@ -21,14 +46,18 @@ const SidebarPage = ({ children, breadcrumb }: SidebarPageProps) => {
           {breadcrumb && (
             <>
               <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+              <BreadcrumbItem className="text-muted-foreground hidden md:block">
+                <BreadcrumbLink asChild>
+                  <Link href="/">
+                    <HomeIcon className="size-4" />
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
               <Breadcrumb>
                 <BreadcrumbList>
                   {breadcrumb.map((item, index) => (
-                    <BreadcrumbItem key={index}>
-                      <BreadcrumbLink asChild>
-                        <Link href={item.href}>{item.title}</Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
+                    <BreadcrumbSegment key={index} item={item} last={index === breadcrumb.length - 1} />
                   ))}
                 </BreadcrumbList>
               </Breadcrumb>
@@ -37,7 +66,7 @@ const SidebarPage = ({ children, breadcrumb }: SidebarPageProps) => {
           <ModeToggle className="ml-auto" />
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">{children}</div>
     </>
   )
 }

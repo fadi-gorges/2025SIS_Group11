@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuthAndOwnership } from './authHelpers'
 import { assessmentGradeFields, assessmentGradeObject } from './schema'
@@ -19,7 +19,7 @@ export const addGrade = mutation({
     const validation = validateWithSchema(assessmentGradeSchema, args)
 
     if (!validation.isValid) {
-      throw new Error(validation.error!)
+      throw new ConvexError(validation.error!)
     }
 
     // Check if assessment exists and belongs to user
@@ -33,7 +33,7 @@ export const addGrade = mutation({
       .first()
 
     if (existingGrade) {
-      throw new Error('A grade with this name already exists for this assessment')
+      throw new ConvexError('A grade with this name already exists for this assessment')
     }
 
     return await ctx.db.insert('assessmentGrades', {
@@ -80,7 +80,7 @@ export const updateGrade = mutation({
     // Validate using composite schema (only validate fields that are being updated)
     const validation = validateWithSchema(assessmentGradeSchema.partial(), args)
     if (!validation.isValid) {
-      throw new Error(validation.error!)
+      throw new ConvexError(validation.error!)
     }
 
     if (validation.data.name !== undefined) {
@@ -92,7 +92,7 @@ export const updateGrade = mutation({
         .first()
 
       if (existingGrade) {
-        throw new Error('A grade with this name already exists for this assessment')
+        throw new ConvexError('A grade with this name already exists for this assessment')
       }
     }
 
