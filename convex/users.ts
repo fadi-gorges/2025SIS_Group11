@@ -71,16 +71,6 @@ export const deleteUser = mutation({
           await ctx.db.delete(grade._id)
         }
 
-        // Delete assessment tasks
-        const tasks = await ctx.db
-          .query('assessmentTasks')
-          .withIndex('by_assessment', (q) => q.eq('assessmentId', assessment._id))
-          .collect()
-
-        for (const task of tasks) {
-          await ctx.db.delete(task._id)
-        }
-
         // Delete assessment
         await ctx.db.delete(assessment._id)
       }

@@ -5,7 +5,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { api } from '../../../convex/_generated/api'
-import { getPreloadedUser } from '../../../convex/serverUtils'
+import { getPreloadedUser } from '../../lib/server'
 
 const AuthenticatedLayout = async ({ children }: { children: React.ReactNode }) => {
   const cookieStore = await cookies()

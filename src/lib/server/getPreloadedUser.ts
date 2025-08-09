@@ -1,6 +1,6 @@
 import { convexAuthNextjsToken } from '@convex-dev/auth/nextjs/server'
 import { preloadQuery } from 'convex/nextjs'
-import { api } from './_generated/api'
+import { api } from '../../../convex/_generated/api'
 
 export const getPreloadedUser = async (token?: string) => {
   const tokenToUse = token ?? (await convexAuthNextjsToken())

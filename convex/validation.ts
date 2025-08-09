@@ -265,17 +265,6 @@ export const assessmentGradeSchema = z.object({
   grade: gradeSchema,
 })
 
-/**
- * Complete assessment task schema
- */
-export const assessmentTaskSchema = z.object({
-  name: taskNameSchema,
-  description: taskDescriptionSchema,
-  status: taskStatusSchema,
-  priority: taskPrioritySchema,
-  reminder: z.number().optional(),
-})
-
 // Export types for TypeScript
 export type LoginData = z.infer<typeof loginSchema>
 export type SignupData = z.infer<typeof signupSchema>
@@ -285,7 +274,6 @@ export type UserData = z.infer<typeof userSchema>
 export type SubjectData = z.infer<typeof subjectSchema>
 export type AssessmentData = z.infer<typeof assessmentSchema>
 export type AssessmentGradeData = z.infer<typeof assessmentGradeSchema>
-export type AssessmentTaskData = z.infer<typeof assessmentTaskSchema>
 
 // =============================================================================
 // VALIDATION HELPER FUNCTIONS

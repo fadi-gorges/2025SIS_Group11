@@ -214,16 +214,6 @@ export const deleteAssessment = mutation({
       await ctx.db.delete(grade._id)
     }
 
-    // Delete assessment tasks
-    const tasks = await ctx.db
-      .query('assessmentTasks')
-      .withIndex('by_assessment', (q) => q.eq('assessmentId', args.assessmentId))
-      .collect()
-
-    for (const task of tasks) {
-      await ctx.db.delete(task._id)
-    }
-
     // Delete the assessment
     await ctx.db.delete(args.assessmentId)
   },

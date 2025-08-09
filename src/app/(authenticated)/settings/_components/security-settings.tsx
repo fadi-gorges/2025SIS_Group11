@@ -13,14 +13,11 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useMutation } from 'convex/react'
 import { Trash2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 
 const SecuritySettings = () => {
-  const router = useRouter()
-
   const deleteUser = useMutation(api.users.deleteUser)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -29,7 +26,7 @@ const SecuritySettings = () => {
     try {
       await deleteUser()
       toast.success('Account deleted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete account')
       setIsDeleting(false)
     }

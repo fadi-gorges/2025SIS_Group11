@@ -1,5 +1,3 @@
-'use client'
-
 import Heading from '@/components/page/heading'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'

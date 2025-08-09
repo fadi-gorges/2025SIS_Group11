@@ -5,7 +5,7 @@ import SecuritySettings from '@/app/(authenticated)/settings/_components/securit
 import Heading from '@/components/page/heading'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getPreloadedUser } from '../../../../convex/serverUtils'
+import { getPreloadedUser } from '../../../lib/server'
 
 const SettingsPage = async () => {
   const preloadedUser = await getPreloadedUser()

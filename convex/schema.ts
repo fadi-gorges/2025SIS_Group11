@@ -62,19 +62,6 @@ export const assessmentGradeFields = {
 } as const
 
 /**
- * Assessment task field definitions
- */
-export const assessmentTaskFields = {
-  name: v.string(),
-  status: v.union(v.literal('todo'), v.literal('doing'), v.literal('done')),
-  priority: v.union(v.literal('none'), v.literal('low'), v.literal('medium'), v.literal('high')),
-  reminder: v.optional(v.number()),
-  description: v.optional(v.string()),
-  userId: v.id('users'),
-  assessmentId: v.id('assessments'),
-} as const
-
-/**
  * Complete object schemas with system fields for use in Convex functions
  */
 export const userObject = v.object({
@@ -99,12 +86,6 @@ export const assessmentGradeObject = v.object({
   _id: v.id('assessmentGrades'),
   _creationTime: v.number(),
   ...assessmentGradeFields,
-})
-
-export const assessmentTaskObject = v.object({
-  _id: v.id('assessmentTasks'),
-  _creationTime: v.number(),
-  ...assessmentTaskFields,
 })
 
 // =============================================================================
@@ -140,10 +121,4 @@ export default defineSchema({
   assessmentGrades: defineTable(assessmentGradeFields)
     .index('by_assessment', ['assessmentId'])
     .index('by_user', ['userId']),
-
-  // Assessment tasks - represents subtasks within an assessment
-  assessmentTasks: defineTable(assessmentTaskFields)
-    .index('by_assessment', ['assessmentId'])
-    .index('by_user', ['userId'])
-    .index('by_user_and_reminder', ['userId', 'reminder']),
 })

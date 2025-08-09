@@ -32,7 +32,7 @@ const ProfileSettings = ({ preloadedUser }: ProfileSettingsProps) => {
   const updateUser = useMutation(api.users.updateUser)
 
   const profileForm = useForm<ProfileFormData>({
-    resolver: zodResolver(profileFormSchema) as any,
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
       givenName: '',
       familyName: '',
@@ -40,7 +40,7 @@ const ProfileSettings = ({ preloadedUser }: ProfileSettingsProps) => {
   })
 
   const reminderForm = useForm<ReminderFormData>({
-    resolver: zodResolver(reminderFormSchema) as any,
+    resolver: zodResolver(reminderFormSchema),
     defaultValues: {
       reminderSchedule: [],
     },
@@ -66,7 +66,7 @@ const ProfileSettings = ({ preloadedUser }: ProfileSettingsProps) => {
         familyName: data.familyName || undefined,
       })
       toast.success('Profile updated successfully!')
-    } catch (error) {
+    } catch {
       toast.error('Failed to update profile')
     }
   }
@@ -77,7 +77,7 @@ const ProfileSettings = ({ preloadedUser }: ProfileSettingsProps) => {
         reminderSchedule: data.reminderSchedule,
       })
       toast.success('Reminder preferences updated successfully!')
-    } catch (error) {
+    } catch {
       toast.error('Failed to update reminder preferences')
     }
   }
