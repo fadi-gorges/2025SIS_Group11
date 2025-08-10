@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
-import { subjectFields, subjectObject } from './schema'
+import { assessmentObject, subjectFields, subjectObject } from './schema'
 import { subjectSchema, validateWithSchema } from './validation'
 
 /**
@@ -140,6 +140,36 @@ export const getSubjectById = query({
 })
 
 /**
+ * Subject detail with computed total grade
+ */
+export const getSubjectDetail = query({
+  args: {
+    subjectId: v.id('subjects'),
+  },
+  returns: v.union(
+    v.object({
+      subject: subjectObject,
+      assessments: v.array(assessmentObject),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const { data: subject } = await requireAuthAndOwnership(ctx, args.subjectId, { allowNull: true })
+    if (!subject) return null
+
+    const assessments = await ctx.db
+      .query('assessments')
+      .withIndex('by_subject', (q) => q.eq('subjectId', subject._id))
+      .collect()
+
+    return {
+      subject,
+      assessments,
+    }
+  },
+})
+
+/**
  * Update a subject
  */
 export const updateSubject = mutation({
@@ -198,18 +228,18 @@ export const deleteSubject = mutation({
       .collect()
 
     for (const assessment of assessments) {
-      // Delete assessment grades
-      const grades = await ctx.db
-        .query('assessmentGrades')
-        .withIndex('by_assessment', (q) => q.eq('assessmentId', assessment._id))
-        .collect()
-
-      for (const grade of grades) {
-        await ctx.db.delete(grade._id)
-      }
-
       // Delete assessment
       await ctx.db.delete(assessment._id)
+    }
+
+    // Delete grades
+    const grades = await ctx.db
+      .query('grades')
+      .withIndex('by_subject', (q) => q.eq('subjectId', args.subjectId))
+      .collect()
+
+    for (const grade of grades) {
+      await ctx.db.delete(grade._id)
     }
 
     // Delete the subject

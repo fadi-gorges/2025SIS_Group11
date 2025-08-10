@@ -206,7 +206,7 @@ export const deleteAssessment = mutation({
 
     // Delete assessment grades
     const grades = await ctx.db
-      .query('assessmentGrades')
+      .query('grades')
       .withIndex('by_assessment', (q) => q.eq('assessmentId', args.assessmentId))
       .collect()
 

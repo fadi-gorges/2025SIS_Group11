@@ -13,10 +13,10 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as assessmentGrades from "../assessmentGrades.js";
 import type * as assessments from "../assessments.js";
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
+import type * as grades from "../grades.js";
 import type * as http from "../http.js";
 import type * as subjects from "../subjects.js";
 import type * as users from "../users.js";
@@ -31,10 +31,10 @@ import type * as validation from "../validation.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  assessmentGrades: typeof assessmentGrades;
   assessments: typeof assessments;
   auth: typeof auth;
   authHelpers: typeof authHelpers;
+  grades: typeof grades;
   http: typeof http;
   subjects: typeof subjects;
   users: typeof users;

@@ -128,6 +128,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      nextjs-toploader:
+        specifier: ^3.8.16
+        version: 3.8.16(next@15.4.6(@babel/core@7.28.0)(babel-plugin-react-compiler@19.1.0-rc.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -3379,6 +3382,13 @@ packages:
       sass:
         optional: true
 
+  nextjs-toploader@3.8.16:
+    resolution: {integrity: sha512-xiejFF9OQD8ovvHfrFhnEmRytvZtwIOY/mMtI9punOAACXpYpgC0y1afJ4DSIEmUi4Syy9A5BsFpUORTJ9z8Ng==}
+    peerDependencies:
+      next: '>= 6.0.0'
+      react: '>= 16.0.0'
+      react-dom: '>= 16.0.0'
+
   nice-try@1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
 
@@ -3392,6 +3402,9 @@ packages:
     resolution: {integrity: sha512-Oo82gJDAVcaMdi3nuoKFavkIHBRVqQ1qvMb+9LHk/cF4P6B2m8aP04hGf7oL6wZ9BuGwX1onlLhpuoofSyoQDQ==}
     engines: {node: '>= 4'}
     hasBin: true
+
+  nprogress@0.2.0:
+    resolution: {integrity: sha512-I19aIingLgR1fmhftnbWWO3dXc0hSxqHQHQb3H8m+K3TnEn/iSeTZZOyvKXWqQESMwuUVnatlCnZdLBZZt2VSA==}
 
   oauth4webapi@3.6.1:
     resolution: {integrity: sha512-b39+drVyA4aNUptFOhkkmGWnG/BE7dT29SW/8PVYElqp7j/DBqzm5SS1G+MUD07XlTcBOAG+6Cb/35Cx2kHIuQ==}
@@ -7354,6 +7367,14 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
+  nextjs-toploader@3.8.16(next@15.4.6(@babel/core@7.28.0)(babel-plugin-react-compiler@19.1.0-rc.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      next: 15.4.6(@babel/core@7.28.0)(babel-plugin-react-compiler@19.1.0-rc.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      nprogress: 0.2.0
+      prop-types: 15.8.1
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
+
   nice-try@1.0.5: {}
 
   node-releases@2.0.19: {}
@@ -7376,6 +7397,8 @@ snapshots:
       read-pkg: 3.0.0
       shell-quote: 1.8.3
       string.prototype.padend: 3.1.6
+
+  nprogress@0.2.0: {}
 
   oauth4webapi@3.6.1: {}
 

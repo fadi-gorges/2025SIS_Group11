@@ -1,6 +1,6 @@
 'use client'
 
-import { FilterSheet } from '@/app/(authenticated)/subjects/_components/filter-sheet'
+import { SubjectFilterSheet } from '@/app/(authenticated)/subjects/_components/subject-filter-sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSetSearchParam } from '@/hooks/use-set-search-param'
@@ -30,7 +30,7 @@ export const TopBar = () => {
         <BookOpenIcon className="text-muted-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <FilterSheet />
+        <SubjectFilterSheet />
         <SubjectFormSheet
           button={
             <Button size="sm">

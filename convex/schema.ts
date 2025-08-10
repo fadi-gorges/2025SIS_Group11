@@ -32,6 +32,7 @@ export const subjectFields = {
   coordinatorName: v.optional(v.string()),
   coordinatorEmail: v.optional(v.string()),
   archived: v.boolean(),
+  totalGrade: v.optional(v.number()),
   userId: v.id('users'),
 } as const
 
@@ -54,10 +55,11 @@ export const assessmentFields = {
 /**
  * Assessment grade field definitions
  */
-export const assessmentGradeFields = {
+export const gradeFields = {
   name: v.string(),
   grade: v.number(),
   userId: v.id('users'),
+  subjectId: v.id('subjects'),
   assessmentId: v.id('assessments'),
 } as const
 
@@ -82,10 +84,10 @@ export const assessmentObject = v.object({
   ...assessmentFields,
 })
 
-export const assessmentGradeObject = v.object({
-  _id: v.id('assessmentGrades'),
+export const gradeObject = v.object({
+  _id: v.id('grades'),
   _creationTime: v.number(),
-  ...assessmentGradeFields,
+  ...gradeFields,
 })
 
 // =============================================================================
@@ -119,7 +121,8 @@ export default defineSchema({
     .index('by_subject_and_complete', ['subjectId', 'complete']),
 
   // Assessment grades - represents grades for different criteria within an assessment
-  assessmentGrades: defineTable(assessmentGradeFields)
+  grades: defineTable(gradeFields)
     .index('by_assessment', ['assessmentId'])
+    .index('by_subject', ['subjectId'])
     .index('by_user', ['userId']),
 })

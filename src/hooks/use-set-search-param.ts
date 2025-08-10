@@ -1,6 +1,7 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { useRouter } from 'nextjs-toploader/app'
 
 export const useSetSearchParam = () => {
   const params = useSearchParams()

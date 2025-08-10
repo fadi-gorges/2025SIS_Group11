@@ -66,29 +66,27 @@ export const deleteUser = mutation({
       .collect()
 
     for (const subject of subjects) {
-      // Delete all assessments for this subject
-      const assessments = await ctx.db
-        .query('assessments')
-        .withIndex('by_subject', (q) => q.eq('subjectId', subject._id))
-        .collect()
-
-      for (const assessment of assessments) {
-        // Delete assessment grades
-        const grades = await ctx.db
-          .query('assessmentGrades')
-          .withIndex('by_assessment', (q) => q.eq('assessmentId', assessment._id))
-          .collect()
-
-        for (const grade of grades) {
-          await ctx.db.delete(grade._id)
-        }
-
-        // Delete assessment
-        await ctx.db.delete(assessment._id)
-      }
-
-      // Delete the subject
       await ctx.db.delete(subject._id)
+    }
+
+    // Delete all assessments for this user
+    const assessments = await ctx.db
+      .query('assessments')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+
+    for (const assessment of assessments) {
+      await ctx.db.delete(assessment._id)
+    }
+
+    // Delete all grades for this user
+    const grades = await ctx.db
+      .query('grades')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .collect()
+
+    for (const grade of grades) {
+      await ctx.db.delete(grade._id)
     }
 
     // Delete auth-related data

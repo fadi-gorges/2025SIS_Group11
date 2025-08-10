@@ -66,7 +66,7 @@ const SidebarPage = ({ children, breadcrumb }: SidebarPageProps) => {
           <ModeToggle className="ml-auto" />
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">{children}</div>
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 md:p-6">{children}</div>
     </>
   )
 }

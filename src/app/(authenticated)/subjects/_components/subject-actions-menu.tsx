@@ -1,5 +1,13 @@
 'use client'
 
+import {
+  Credenza,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+} from '@/components/extensions/credenza'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -10,71 +18,125 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useMutation } from 'convex/react'
 import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
-import { Id } from '../../../../../convex/_generated/dataModel'
+import { Doc } from '../../../../../convex/_generated/dataModel'
 
 type SubjectActionsMenuProps = {
-  subjectId: Id<'subjects'>
-  archived: boolean
+  subject: Doc<'subjects'>
+  onEdit?: () => void
 }
 
-export const SubjectActionsMenu = ({ subjectId, archived }: SubjectActionsMenuProps) => {
-  const router = useRouter()
+export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps) => {
   const toggleArchive = useMutation(api.subjects.toggleSubjectArchive)
   const deleteSubject = useMutation(api.subjects.deleteSubject)
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const [isArchiveOpen, setIsArchiveOpen] = React.useState(false)
+  const [isArchiving, setIsArchiving] = React.useState(false)
 
-  const onEdit = () => {
-    router.push(`/subjects/${subjectId}`)
-  }
-
-  const onToggleArchive = async () => {
+  const onConfirmArchive = async () => {
     try {
-      await toggleArchive({ subjectId })
-      toast.success(archived ? 'Subject unarchived' : 'Subject archived')
+      setIsArchiving(true)
+      await toggleArchive({ subjectId: subject._id })
+      toast.success(subject.archived ? 'Subject unarchived' : 'Subject archived')
+      setIsArchiveOpen(false)
     } catch {
       toast.error('Failed to update archive state')
+    } finally {
+      setIsArchiving(false)
     }
   }
 
-  const onDelete = async () => {
+  const onConfirmDelete = async () => {
     try {
-      await deleteSubject({ subjectId })
+      setIsDeleting(true)
+      await deleteSubject({ subjectId: subject._id })
       toast.success('Subject deleted')
+      setIsDeleteOpen(false)
     } catch {
       toast.error('Failed to delete subject')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <MoreHorizontal className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuItem onClick={onEdit}>
-          <Pencil className="mr-2 size-4" /> Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onToggleArchive}>
-          {archived ? (
-            <>
-              <ArchiveRestore className="mr-2 size-4" /> Unarchive
-            </>
-          ) : (
-            <>
-              <Archive className="mr-2 size-4" /> Archive
-            </>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-44">
+          {onEdit && (
+            <DropdownMenuItem onClick={onEdit}>
+              <Pencil className="mr-2 size-4" /> Edit
+            </DropdownMenuItem>
           )}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-          <Trash2 className="text-destructive mr-2 size-4" /> Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem onClick={() => setIsArchiveOpen(true)}>
+            {subject.archived ? (
+              <>
+                <ArchiveRestore className="mr-2 size-4" /> Unarchive
+              </>
+            ) : (
+              <>
+                <Archive className="mr-2 size-4" /> Archive
+              </>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setIsDeleteOpen(true)}>
+            <Trash2 className="text-destructive mr-2 size-4" /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Credenza open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
+        <CredenzaContent>
+          <CredenzaHeader>
+            <CredenzaTitle>{subject.archived ? 'Unarchive' : 'Archive'} subject?</CredenzaTitle>
+            <CredenzaDescription>
+              {subject.archived ? (
+                <>
+                  This will restore the subject{' '}
+                  <b className="text-foreground font-medium">&quot;{subject.name}&quot;</b> to your active subjects
+                  list.
+                </>
+              ) : (
+                <>
+                  This will move the subject <b className="text-foreground font-medium">&quot;{subject.name}&quot;</b>{' '}
+                  to your archived subjects. You can restore it later if needed.
+                </>
+              )}
+            </CredenzaDescription>
+          </CredenzaHeader>
+          <CredenzaFooter withCancel>
+            <Button onClick={onConfirmArchive} loading={isArchiving}>
+              {subject.archived ? 'Unarchive' : 'Archive'}
+            </Button>
+          </CredenzaFooter>
+        </CredenzaContent>
+      </Credenza>
+      <Credenza open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <CredenzaContent>
+          <CredenzaHeader>
+            <CredenzaTitle>Delete subject?</CredenzaTitle>
+            <CredenzaDescription>
+              This action cannot be undone. This will permanently delete the subject{' '}
+              <b className="text-foreground font-medium">&quot;{subject.name}&quot;</b> and remove its associated{' '}
+              <b className="text-foreground font-medium">assessment, grade and task data</b> from our servers.
+            </CredenzaDescription>
+          </CredenzaHeader>
+          <CredenzaFooter withCancel>
+            <Button variant="destructive" onClick={onConfirmDelete} loading={isDeleting}>
+              Delete
+            </Button>
+          </CredenzaFooter>
+        </CredenzaContent>
+      </Credenza>
+    </>
   )
 }
 

@@ -16,13 +16,13 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from 'convex/react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'nextjs-toploader/app'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { api } from '../../../../../convex/_generated/api'
-import { subjectSchema } from '../../../../../convex/validation'
+import { subjectSchema, VALIDATION_LIMITS } from '../../../../../convex/validation'
 
 type SubjectFormSheetProps = {
   button: React.ReactNode
@@ -57,6 +57,7 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
       })
       toast.success('Subject created')
       form.reset()
+      setOpen(false)
       router.push(`/subjects/${id}`)
     } catch (e: any) {
       toast.error(e?.data || 'Failed to create subject')
@@ -80,7 +81,11 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
                 <FormItem>
                   <FormLabel>Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Software Engineering" {...field} />
+                    <Input
+                      maxLength={VALIDATION_LIMITS.SUBJECT_NAME_MAX_LENGTH}
+                      placeholder="e.g., Software Engineering"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -93,7 +98,11 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
                 <FormItem>
                   <FormLabel>Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., COMP3000" {...field} />
+                    <Input
+                      maxLength={VALIDATION_LIMITS.SUBJECT_CODE_MAX_LENGTH}
+                      placeholder="e.g., COMP3000"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -106,7 +115,11 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
                 <FormItem>
                   <FormLabel>Term</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Semester 1" {...field} />
+                    <Input
+                      maxLength={VALIDATION_LIMITS.SUBJECT_TERM_MAX_LENGTH}
+                      placeholder="e.g., Semester 1"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,7 +132,11 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
                 <FormItem>
                   <FormLabel>Coordinator Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Dr Jane Smith" {...field} />
+                    <Input
+                      maxLength={VALIDATION_LIMITS.COORDINATOR_NAME_MAX_LENGTH}
+                      placeholder="e.g., Dr Jane Smith"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,7 +162,12 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Optional details..." rows={4} {...field} />
+                    <Textarea
+                      maxLength={VALIDATION_LIMITS.SUBJECT_DESCRIPTION_MAX_LENGTH}
+                      placeholder="Optional details..."
+                      rows={4}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -155,7 +177,9 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
               <SheetClose asChild>
                 <Button variant="outline">Cancel</Button>
               </SheetClose>
-              <Button type="submit">Create Subject</Button>
+              <Button type="submit" loading={form.formState.isSubmitting}>
+                Create Subject
+              </Button>
             </SheetFooter>
           </form>
         </Form>

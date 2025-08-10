@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from 'convex/react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'nextjs-toploader/app'
 import { useEffect } from 'react'
 import { api } from '../../../convex/_generated/api'
 

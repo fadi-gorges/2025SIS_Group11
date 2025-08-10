@@ -159,7 +159,7 @@ export const assessmentDueDateSchema = z.number().optional()
 /**
  * Grade validation schema
  */
-export const gradeSchema = z
+export const gradeValueSchema = z
   .number()
   .min(VALIDATION_LIMITS.GRADE_MIN, `Grade must be at least ${VALIDATION_LIMITS.GRADE_MIN}`)
   .max(VALIDATION_LIMITS.GRADE_MAX, `Grade must be no more than ${VALIDATION_LIMITS.GRADE_MAX}`)
@@ -259,9 +259,9 @@ export const assessmentSchema = z.object({
 /**
  * Complete grade schema
  */
-export const assessmentGradeSchema = z.object({
+export const gradeSchema = z.object({
   name: gradeNameSchema,
-  grade: gradeSchema,
+  grade: gradeValueSchema,
 })
 
 // Export types for TypeScript
@@ -272,7 +272,7 @@ export type ReminderFormData = z.infer<typeof reminderFormSchema>
 export type UserData = z.infer<typeof userSchema>
 export type SubjectData = z.infer<typeof subjectSchema>
 export type AssessmentData = z.infer<typeof assessmentSchema>
-export type AssessmentGradeData = z.infer<typeof assessmentGradeSchema>
+export type GradeData = z.infer<typeof gradeSchema>
 
 // =============================================================================
 // VALIDATION HELPER FUNCTIONS
