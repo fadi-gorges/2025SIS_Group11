@@ -64,7 +64,9 @@ type ItemProps = React.ComponentProps<'div'> & {
 
 const GridItem = ({ href, className, children, actions }: ItemProps) => {
   const content = (
-    <Card className={cn('hover:bg-muted/75 flex flex-col gap-1 p-4 transition-colors', className)}>{children}</Card>
+    <Card className={cn('hover:bg-muted/75 flex flex-col gap-1 p-4 transition-colors', actions && 'pr-12', className)}>
+      {children}
+    </Card>
   )
 
   return (
@@ -77,7 +79,13 @@ const GridItem = ({ href, className, children, actions }: ItemProps) => {
 
 const ListItem = ({ href, className, children, actions }: ItemProps) => {
   const content = (
-    <div className={cn('hover:bg-muted/75 bg-card flex h-20 items-center gap-3 px-4 transition-colors', className)}>
+    <div
+      className={cn(
+        'hover:bg-muted/75 bg-card flex h-20 items-center gap-3 px-4 transition-colors',
+        actions && 'pr-12',
+        className,
+      )}
+    >
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   )

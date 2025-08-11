@@ -1,6 +1,14 @@
 'use client'
 
-import { BookOpenIcon, LayoutDashboardIcon, NotebookPenIcon, SettingsIcon } from 'lucide-react'
+import {
+  BookOpenIcon,
+  ClipboardListIcon,
+  KanbanSquareIcon,
+  LayoutDashboardIcon,
+  NotebookPenIcon,
+  Rows3Icon,
+  SettingsIcon,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { NavMain } from '@/components/sidebar/nav-main'
@@ -15,19 +23,31 @@ const data = {
       title: 'Dashboard',
       url: '/',
       icon: LayoutDashboardIcon,
-      isActive: true,
+    },
+    {
+      title: 'Timeline',
+      url: '/timeline',
+      icon: Rows3Icon,
+    },
+    {
+      title: 'Tasks',
+      url: '/tasks',
+      icon: KanbanSquareIcon,
     },
     {
       title: 'Subjects',
       url: '/subjects',
       icon: BookOpenIcon,
-      isActive: true,
+    },
+    {
+      title: 'Assessments',
+      url: '/assessments',
+      icon: ClipboardListIcon,
     },
     {
       title: 'Settings',
       url: '/settings',
       icon: SettingsIcon,
-      isActive: true,
     },
   ],
 }

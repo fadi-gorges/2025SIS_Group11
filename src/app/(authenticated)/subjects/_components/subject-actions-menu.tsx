@@ -23,7 +23,7 @@ import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import { Doc } from '../../../../../convex/_generated/dataModel'
 
-type SubjectActionsMenuProps = {
+type SubjectActionsMenuProps = React.ComponentProps<typeof Button> & {
   subject: Doc<'subjects'>
   onEdit?: () => void
 }

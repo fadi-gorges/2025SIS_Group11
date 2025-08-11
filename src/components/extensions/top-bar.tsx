@@ -1,15 +1,13 @@
 'use client'
 
-import { SubjectFilterSheet } from '@/app/(authenticated)/subjects/_components/subject-filter-sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSetSearchParam } from '@/hooks/use-set-search-param'
 import { useDebouncedSearch } from '@/lib/utils'
-import { BookOpenIcon, GridIcon, ListIcon, PlusIcon } from 'lucide-react'
+import { BookOpenIcon, GridIcon, ListIcon } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import SubjectFormSheet from './subject-form-sheet'
 
-export const TopBar = () => {
+export const TopBar = ({ children }: { children: React.ReactNode }) => {
   const params = useSearchParams()
 
   const view = (params.get('view') as 'list' | 'grid' | null) ?? 'grid'
@@ -30,14 +28,7 @@ export const TopBar = () => {
         <BookOpenIcon className="text-muted-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <SubjectFilterSheet />
-        <SubjectFormSheet
-          button={
-            <Button size="sm">
-              <PlusIcon className="size-4" /> Add
-            </Button>
-          }
-        />
+        {children}
         <div className="ml-2 inline-flex rounded-md border">
           <Button
             variant={view === 'grid' ? 'secondary' : 'ghost'}

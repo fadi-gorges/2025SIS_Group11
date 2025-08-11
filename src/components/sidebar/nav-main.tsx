@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export function NavMain({
   items,
@@ -23,22 +24,24 @@ export function NavMain({
     title: string
     url: string
     icon: LucideIcon
-    isActive?: boolean
     items?: {
       title: string
       url: string
     }[]
   }[]
 }) {
+  const pathname = usePathname()
   const { setOpenMobile } = useSidebar()
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Main</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) =>
-          item.items ? (
-            <Collapsible key={item.title} asChild defaultOpen={item.isActive} className="group/collapsible">
+        {items.map((item) => {
+          const isActive = item.url === '/' ? pathname === item.url : pathname.startsWith(item.url)
+
+          return item.items ? (
+            <Collapsible key={item.title} asChild defaultOpen={isActive} className="group/collapsible">
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip={item.title}>
@@ -64,15 +67,15 @@ export function NavMain({
             </Collapsible>
           ) : (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title} asChild>
+              <SidebarMenuButton tooltip={item.title} asChild isActive={isActive}>
                 <Link href={item.url} onClick={() => setOpenMobile(false)}>
                   <item.icon />
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          ),
-        )}
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )

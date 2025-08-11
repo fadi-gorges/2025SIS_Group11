@@ -46,14 +46,14 @@ const SidebarPage = ({ children, breadcrumb }: SidebarPageProps) => {
           {breadcrumb && (
             <>
               <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-              <BreadcrumbItem className="text-muted-foreground hidden md:block">
+              <BreadcrumbItem className="text-muted-foreground">
                 <BreadcrumbLink asChild>
                   <Link href="/">
                     <HomeIcon className="size-4" />
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbSeparator className="block" />
               <Breadcrumb>
                 <BreadcrumbList>
                   {breadcrumb.map((item, index) => (
