@@ -2,6 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { ClockIcon } from 'lucide-react'
 import React from 'react'
 import { Doc } from '../../../../../convex/_generated/dataModel'
 
@@ -9,13 +10,9 @@ type AssessmentDueBadgeProps = React.ComponentProps<typeof Badge> & {
   assessment: Doc<'assessments'>
 }
 
-export const AssessmentDueBadge = ({ className: _className, assessment, ...props }: AssessmentDueBadgeProps) => {
+export const AssessmentDueBadge = ({ className, assessment, ...props }: AssessmentDueBadgeProps) => {
   if (assessment.complete) {
-    return (
-      <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-        Complete
-      </Badge>
-    )
+    return <Badge variant="success">Complete</Badge>
   }
 
   if (!assessment.dueDate) {
@@ -28,11 +25,7 @@ export const AssessmentDueBadge = ({ className: _className, assessment, ...props
   const timeDiff = dueDate.getTime() - now.getTime()
 
   if (timeDiff < 0) {
-    return (
-      <Badge variant="destructive" className="bg-red-600 hover:bg-red-700">
-        Overdue
-      </Badge>
-    )
+    return <Badge variant="destructive">Overdue</Badge>
   }
 
   const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -44,38 +37,27 @@ export const AssessmentDueBadge = ({ className: _className, assessment, ...props
   }
 
   let text: string
-  let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary'
-  let className = ''
 
   if (daysDiff === 1) {
     text = 'Tomorrow'
-    variant = 'outline'
-    className = 'border-orange-500 text-orange-700 bg-orange-50 hover:bg-orange-100'
   } else if (daysDiff > 1) {
     text = `${daysDiff} days`
-    variant = 'outline'
-    className = 'border-orange-500 text-orange-700 bg-orange-50 hover:bg-orange-100'
   } else {
     const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60))
     const minutesLeft = Math.floor(timeDiff / (1000 * 60))
 
     if (hoursLeft >= 1) {
-      text = `${hoursLeft} hours`
-      variant = 'outline'
-      className = 'border-orange-500 text-orange-700 bg-orange-50 hover:bg-orange-100'
+      text = hoursLeft === 1 ? '1 hour' : `${hoursLeft} hours`
     } else if (minutesLeft >= 1) {
-      text = `${minutesLeft} minutes`
-      variant = 'outline'
-      className = 'border-orange-500 text-orange-700 bg-orange-50 hover:bg-orange-100'
+      text = minutesLeft === 1 ? '1 minute' : `${minutesLeft} minutes`
     } else {
       text = 'Due now'
-      variant = 'destructive'
-      className = 'bg-red-600 hover:bg-red-700'
     }
   }
 
   return (
-    <Badge variant={variant} className={cn(className, _className)} {...props}>
+    <Badge variant="warning" className={cn(className)} {...props}>
+      <ClockIcon className="size-4" />
       {text}
     </Badge>
   )

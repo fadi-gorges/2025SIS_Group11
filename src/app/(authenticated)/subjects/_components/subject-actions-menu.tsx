@@ -40,7 +40,7 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
     try {
       setIsArchiving(true)
       await toggleArchive({ subjectId: subject._id })
-      toast.success(subject.archived ? 'Subject unarchived' : 'Subject archived')
+      toast.success(subject.archived ? 'Subject has been unarchived.' : 'Subject has been archived.')
       setIsArchiveOpen(false)
     } catch {
       toast.error('Failed to update archive state')
@@ -53,10 +53,10 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
     try {
       setIsDeleting(true)
       await deleteSubject({ subjectId: subject._id })
-      toast.success('Subject deleted')
+      toast.success('Subject has been deleted.')
       setIsDeleteOpen(false)
     } catch {
-      toast.error('Failed to delete subject')
+      toast.error('Failed to delete subject.')
     } finally {
       setIsDeleting(false)
     }
@@ -95,25 +95,16 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
       </DropdownMenu>
       <Credenza open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
         <CredenzaContent>
-          <CredenzaHeader>
+          <CredenzaHeader className="overflow-hidden">
             <CredenzaTitle>{subject.archived ? 'Unarchive' : 'Archive'} subject?</CredenzaTitle>
             <CredenzaDescription>
-              {subject.archived ? (
-                <>
-                  This will restore the subject{' '}
-                  <b className="text-foreground font-medium">&quot;{subject.name}&quot;</b> to your active subjects
-                  list.
-                </>
-              ) : (
-                <>
-                  This will move the subject <b className="text-foreground font-medium">&quot;{subject.name}&quot;</b>{' '}
-                  to your archived subjects. You can restore it later if needed.
-                </>
-              )}
+              {subject.archived
+                ? 'This will restore the subject to your active subjects list.'
+                : 'This will move the subject to your archived subjects. You can restore it later if needed.'}
             </CredenzaDescription>
           </CredenzaHeader>
           <CredenzaFooter withCancel>
-            <Button onClick={onConfirmArchive} loading={isArchiving}>
+            <Button variant="secondary" onClick={onConfirmArchive} loading={isArchiving}>
               {subject.archived ? 'Unarchive' : 'Archive'}
             </Button>
           </CredenzaFooter>
@@ -124,9 +115,8 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
           <CredenzaHeader>
             <CredenzaTitle>Delete subject?</CredenzaTitle>
             <CredenzaDescription>
-              This action cannot be undone. This will permanently delete the subject{' '}
-              <b className="text-foreground font-medium">&quot;{subject.name}&quot;</b> and remove its associated{' '}
-              <b className="text-foreground font-medium">assessment, grade and task data</b> from our servers.
+              This action cannot be undone. This will permanently delete the subject and remove its associated{' '}
+              <b className="text-foreground">assessment, grade and task data</b> from our servers.
             </CredenzaDescription>
           </CredenzaHeader>
           <CredenzaFooter withCancel>

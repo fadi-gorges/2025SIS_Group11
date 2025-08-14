@@ -25,9 +25,9 @@ const SecuritySettings = () => {
     setIsDeleting(true)
     try {
       await deleteUser()
-      toast.success('Account deleted successfully')
+      toast.success('Account has been deleted.')
     } catch {
-      toast.error('Failed to delete account')
+      toast.error('Failed to delete account.')
       setIsDeleting(false)
     }
   }

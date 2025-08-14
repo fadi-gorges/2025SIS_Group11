@@ -93,7 +93,7 @@ const FilterSheetButtonGroup = ({
   return (
     <FilterSheetSection className={className} {...props}>
       <FilterSheetSectionTitle>{title}</FilterSheetSectionTitle>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 overflow-hidden">
         {allOptions.map((option) => {
           const isAll = option.value === ''
           const label = isAll ? allLabel : option.label
@@ -107,7 +107,7 @@ const FilterSheetButtonGroup = ({
               className="rounded-md border px-3 py-1 text-sm"
               aria-pressed={active}
             >
-              {label}
+              <span className="truncate">{label}</span>
             </Button>
           )
         })}

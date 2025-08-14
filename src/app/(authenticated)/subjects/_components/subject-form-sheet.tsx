@@ -55,12 +55,12 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
         coordinatorName: data.coordinatorName || undefined,
         coordinatorEmail: data.coordinatorEmail || undefined,
       })
-      toast.success('Subject created')
+      toast.success('Subject has been created.')
       form.reset()
       setOpen(false)
       router.push(`/subjects/${id}`)
     } catch (e: any) {
-      toast.error(e?.data || 'Failed to create subject')
+      toast.error(e?.data || 'Failed to create subject.')
     }
   }
 

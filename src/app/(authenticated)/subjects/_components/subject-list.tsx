@@ -4,8 +4,9 @@ import SubjectFormSheet from '@/app/(authenticated)/subjects/_components/subject
 import { DataLayout, GridItem, ListItem } from '@/components/extensions/data-layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { useQuery } from 'convex/react'
-import { BookOpenIcon, PlusIcon } from 'lucide-react'
+import { BookIcon, BookOpenIcon, CalendarIcon, HashIcon, PlusIcon } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { api } from '../../../../../convex/_generated/api'
 import { SubjectActionsMenu } from './subject-actions-menu'
@@ -24,33 +25,62 @@ export const SubjectList = () => {
   })
 
   const renderGridItem = (s: any) => {
-    const badge = s.archived ? <Badge variant="secondary">Archived</Badge> : undefined
-    const subtitle = [s.code, s.term].filter(Boolean).join(' • ')
-
     return (
       <GridItem key={s._id} href={`/subjects/${s._id}`} actions={<SubjectActionsMenu subject={s} />}>
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-1 gap-2">
-            <p className="truncate text-base font-medium">{s.name}</p>
-            {badge}
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <BookIcon className="size-5 shrink-0" />
+            <p className="line-clamp-2 text-base font-medium break-words">{s.name}</p>
           </div>
-          {subtitle && <p className="text-muted-foreground truncate text-sm">{subtitle}</p>}
+          <div className="-mr-10 space-y-3">
+            {(s.code || s.term) && <Separator />}
+            <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
+              {s.code && (
+                <div className="flex items-center gap-1 overflow-hidden">
+                  <HashIcon className="size-4 shrink-0" />
+                  <p className="truncate">{s.code}</p>
+                </div>
+              )}
+              {s.term && (
+                <div className="flex items-center gap-1 overflow-hidden">
+                  <CalendarIcon className="size-4 shrink-0" />
+                  <p className="truncate">{s.term}</p>
+                </div>
+              )}
+            </div>
+            {s.archived && <Badge variant="secondary">Archived</Badge>}
+          </div>
         </div>
       </GridItem>
     )
   }
 
   const renderListItem = (s: any) => {
-    const badge = s.archived ? <Badge variant="secondary">Archived</Badge> : undefined
-    const subtitle = [s.code, s.term].filter(Boolean).join(' • ')
-
     return (
       <ListItem key={s._id} href={`/subjects/${s._id}`} actions={<SubjectActionsMenu subject={s} />}>
-        <div className="flex items-center gap-2">
-          <p className="truncate text-base font-medium">{s.name}</p>
-          {badge}
+        <div className="flex items-center gap-3">
+          <BookIcon className="size-5 shrink-0" />
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-3">
+              <p className="truncate text-base font-medium">{s.name}</p>
+              {s.archived && <Badge variant="secondary">Archived</Badge>}
+            </div>
+            <div className="text-muted-foreground flex items-center gap-4 text-sm">
+              {s.code && (
+                <div className="flex items-center gap-1 overflow-hidden">
+                  <HashIcon className="size-4 shrink-0" />
+                  <p className="truncate">{s.code}</p>
+                </div>
+              )}
+              {s.term && (
+                <div className="flex items-center gap-1 overflow-hidden">
+                  <CalendarIcon className="size-4 shrink-0" />
+                  <p className="truncate">{s.term}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        {subtitle && <p className="text-muted-foreground truncate text-sm">{subtitle}</p>}
       </ListItem>
     )
   }

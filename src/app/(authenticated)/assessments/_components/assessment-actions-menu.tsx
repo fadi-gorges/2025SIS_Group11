@@ -39,9 +39,9 @@ export const AssessmentActionsMenu = ({ assessment, onEdit }: AssessmentActionsM
     try {
       setIsToggling(true)
       await toggleComplete({ assessmentId: assessment._id })
-      toast.success(assessment.complete ? 'Assessment marked as incomplete' : 'Assessment marked as complete')
+      toast.success(assessment.complete ? 'Assessment marked as incomplete.' : 'Assessment marked as complete.')
     } catch {
-      toast.error('Failed to update completion status')
+      toast.error('Failed to update completion status.')
     } finally {
       setIsToggling(false)
     }
@@ -51,10 +51,10 @@ export const AssessmentActionsMenu = ({ assessment, onEdit }: AssessmentActionsM
     try {
       setIsDeleting(true)
       await deleteAssessment({ assessmentId: assessment._id })
-      toast.success('Assessment deleted')
+      toast.success('Assessment has been deleted.')
       setIsDeleteOpen(false)
     } catch {
-      toast.error('Failed to delete assessment')
+      toast.error('Failed to delete assessment.')
     } finally {
       setIsDeleting(false)
     }
@@ -96,9 +96,8 @@ export const AssessmentActionsMenu = ({ assessment, onEdit }: AssessmentActionsM
           <CredenzaHeader>
             <CredenzaTitle>Delete assessment?</CredenzaTitle>
             <CredenzaDescription>
-              This action cannot be undone. This will permanently delete the assessment{' '}
-              <b className="text-foreground font-medium">&quot;{assessment.name}&quot;</b> and remove its associated{' '}
-              <b className="text-foreground font-medium">grade data</b> from our servers.
+              This action cannot be undone. This will permanently delete the assessment and remove its associated{' '}
+              <b className="text-foreground">grade data</b> from our servers.
             </CredenzaDescription>
           </CredenzaHeader>
           <CredenzaFooter withCancel>

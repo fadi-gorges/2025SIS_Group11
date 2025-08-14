@@ -6,10 +6,11 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
+import { formatDate } from '@/lib/utils/format-date'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
 import {
-  BookOpenIcon,
+  BookIcon,
   CalendarIcon,
   CheckIcon,
   GraduationCapIcon,
@@ -88,7 +89,7 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
         description: data.description || undefined,
         dueDate: data.dueDate ? data.dueDate : undefined,
       })
-      toast.success('Assessment updated')
+      toast.success('Assessment has been updated.')
       setIsEditing(false)
     } catch (e: any) {
       toast.error(e?.data || 'Failed to update assessment')
@@ -162,11 +163,11 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
             <div className="flex items-center gap-2">
               <Link
                 href={`/subjects/${detail.subject._id}`}
-                className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm transition-colors"
+                className="text-muted-foreground hover:text-foreground flex items-center gap-2 overflow-hidden text-sm transition-colors"
               >
-                <BookOpenIcon className="size-4" />
-                <span>{detail.subject.name}</span>
-                {detail.subject.code && <span>({detail.subject.code})</span>}
+                <BookIcon className="size-4 shrink-0" />
+                <span className="truncate">{detail.subject.name}</span>
+                {detail.subject.code && <span className="truncate">({detail.subject.code})</span>}
               </Link>
             </div>
 
@@ -217,15 +218,7 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
                   {isEditing ? (
                     <span>Due date editing in form</span>
                   ) : (
-                    <span>
-                      {assessment.dueDate
-                        ? new Date(assessment.dueDate).toLocaleDateString('en-AU', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })
-                        : 'No due date'}
-                    </span>
+                    <span>{assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'No due date'}</span>
                   )}
                 </div>
               )}
@@ -309,7 +302,7 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <GraduationCapIcon className="h-4 w-4" />
+                          <GraduationCapIcon className="size-4 shrink-0" />
                           <h4 className="truncate text-sm font-medium">{grade.name}</h4>
                         </div>
                         <div className="text-primary text-2xl font-bold">{grade.grade}%</div>

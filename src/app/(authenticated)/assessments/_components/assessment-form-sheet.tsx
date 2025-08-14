@@ -58,14 +58,13 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
       weight: 0,
       description: '',
       dueDate: undefined,
-      dueTime: '',
+      dueTime: '23:59',
       subjectId: '',
     },
   })
 
   const onSubmit = async (data: CreateAssessmentWithDueTimeData) => {
     try {
-      // Combine date and time if both are provided
       let combinedDueDate: number | undefined = undefined
       if (data.dueDate) {
         const date = new Date(data.dueDate)
@@ -74,7 +73,6 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
           const [hours, minutes] = data.dueTime.split(':').map(Number)
           date.setHours(hours, minutes, 0, 0)
         } else {
-          // Default to 23:59 if no time is specified
           date.setHours(23, 59, 0, 0)
         }
 
@@ -90,12 +88,12 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
         dueDate: combinedDueDate,
         subjectId: data.subjectId as Id<'subjects'>,
       })
-      toast.success('Assessment created')
+      toast.success('Assessment has been created.')
       form.reset()
       setOpen(false)
       router.push(`/assessments/${id}`)
     } catch (e: any) {
-      toast.error(e?.data || 'Failed to create assessment')
+      toast.error(e?.data || 'Failed to create assessment.')
     }
   }
 
@@ -108,7 +106,7 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
           <SheetDescription>Create an assessment to track your academic work.</SheetDescription>
         </SheetHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto p-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-x-hidden overflow-y-auto p-4">
             {/* Subject Selection */}
             <FormField
               control={form.control}
@@ -123,7 +121,7 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
                           variant="outline"
                           role="combobox"
                           aria-expanded={subjectOpen}
-                          className={cn('w-full justify-between', !field.value && 'text-muted-foreground')}
+                          className={cn('w-full justify-between truncate', !field.value && 'text-muted-foreground')}
                         >
                           {field.value
                             ? subjects?.find((subject) => subject._id === field.value)?.name
@@ -132,7 +130,7 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
+                    <PopoverContent className="w-full max-w-sm p-0">
                       <Command>
                         <CommandInput placeholder="Search subjects..." />
                         <CommandList>
@@ -149,11 +147,11 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
                               >
                                 <Check
                                   className={cn(
-                                    'mr-2 h-4 w-4',
+                                    'mr-2 size-4',
                                     subject._id === field.value ? 'opacity-100' : 'opacity-0',
                                   )}
                                 />
-                                {subject.name}
+                                <span className="truncate">{subject.name}</span>
                               </CommandItem>
                             ))}
                           </CommandGroup>

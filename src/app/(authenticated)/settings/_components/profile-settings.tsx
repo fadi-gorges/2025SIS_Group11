@@ -61,9 +61,9 @@ const ProfileSettings = () => {
         givenName: data.givenName || undefined,
         familyName: data.familyName || undefined,
       })
-      toast.success('Profile updated successfully!')
+      toast.success('Profile has been updated.')
     } catch {
-      toast.error('Failed to update profile')
+      toast.error('Failed to update profile.')
     }
   }
 
@@ -72,9 +72,9 @@ const ProfileSettings = () => {
       await updateUser({
         reminderSchedule: data.reminderSchedule,
       })
-      toast.success('Reminder preferences updated successfully!')
+      toast.success('Reminder preferences have been updated.')
     } catch {
-      toast.error('Failed to update reminder preferences')
+      toast.error('Failed to update reminder preferences.')
     }
   }
 

@@ -87,10 +87,10 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
         coordinatorName: data.coordinatorName || undefined,
         coordinatorEmail: data.coordinatorEmail || undefined,
       })
-      toast.success('Subject updated')
+      toast.success('Subject has been updated.')
       setIsEditing(false)
     } catch (e: any) {
-      toast.error(e?.data || 'Failed to update subject')
+      toast.error(e?.data || 'Failed to update subject.')
     }
   }
 
@@ -123,7 +123,7 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
                       )}
                     />
                   ) : (
-                    <h1 className="text-3xl font-bold tracking-tight">{subject.name}</h1>
+                    <h1 className="line-clamp-2 text-3xl font-bold tracking-tight break-words">{subject.name}</h1>
                   )}
                   {subject.archived && (
                     <Badge variant="secondary" className="text-xs">
@@ -158,10 +158,10 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
             </div>
 
             {/* Subject info with icons */}
-            <div className="text-muted-foreground flex flex-wrap items-center gap-6 text-sm">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               {/* Code */}
-              <div className="flex items-center gap-2">
-                <HashIcon className="h-4 w-4" />
+              <div className="flex items-center gap-2 overflow-hidden">
+                <HashIcon className="size-4 shrink-0" />
                 {isEditing ? (
                   <FormField
                     control={form.control}
@@ -181,13 +181,13 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
                     )}
                   />
                 ) : (
-                  <span>{subject.code || 'No code'}</span>
+                  <span className="truncate">{subject.code || 'No code'}</span>
                 )}
               </div>
 
               {/* Term */}
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
+              <div className="flex items-center gap-2 overflow-hidden">
+                <CalendarIcon className="size-4 shrink-0" />
                 {isEditing ? (
                   <FormField
                     control={form.control}
@@ -207,13 +207,13 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
                     )}
                   />
                 ) : (
-                  <span>{subject.term || 'No term'}</span>
+                  <span className="truncate">{subject.term || 'No term'}</span>
                 )}
               </div>
 
               {/* Coordinator */}
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-4 w-4" />
+              <div className="flex items-center gap-2 overflow-hidden">
+                <UserIcon className="size-4 shrink-0" />
                 {isEditing ? (
                   <FormField
                     control={form.control}
@@ -233,14 +233,14 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
                     )}
                   />
                 ) : (
-                  <span>{subject.coordinatorName || 'No coordinator'}</span>
+                  <span className="truncate">{subject.coordinatorName || 'No coordinator'}</span>
                 )}
               </div>
 
               {/* Email */}
               {(subject.coordinatorEmail || isEditing) && (
-                <div className="flex items-center gap-2">
-                  <MailIcon className="h-4 w-4" />
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <MailIcon className="size-4 shrink-0" />
                   {isEditing ? (
                     <FormField
                       control={form.control}
@@ -260,7 +260,7 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
                       )}
                     />
                   ) : (
-                    <span>{subject.coordinatorEmail}</span>
+                    <span className="truncate">{subject.coordinatorEmail}</span>
                   )}
                 </div>
               )}

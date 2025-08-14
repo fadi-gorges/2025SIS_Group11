@@ -94,7 +94,7 @@ const ListItem = ({ href, className, children, actions }: ItemProps) => {
     <div
       className={cn(
         'hover:bg-muted/75 bg-card flex h-20 items-center gap-3 px-4 transition-colors',
-        actions && 'pr-12',
+        actions && 'pr-14',
         className,
       )}
     >
@@ -111,7 +111,7 @@ const ListItem = ({ href, className, children, actions }: ItemProps) => {
 }
 
 const GridLayout = ({ children }: React.ComponentProps<'div'>) => (
-  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
 )
 
 const ListLayout = ({ children }: { children: React.ReactNode }) => (

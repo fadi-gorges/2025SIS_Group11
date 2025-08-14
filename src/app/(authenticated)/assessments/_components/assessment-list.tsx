@@ -35,25 +35,23 @@ export const AssessmentList = () => {
         actions={<AssessmentActionsMenu assessment={assessment} />}
       >
         <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <span className="text-lg">{assessment.icon}</span>
-              <p className="truncate text-base font-medium">{assessment.name}</p>
-            </div>
-            <AssessmentDueBadge assessment={assessment} />
+          <div className="flex items-center gap-3 overflow-hidden">
+            <span className="text-lg">{assessment.icon}</span>
+            <p className="line-clamp-2 text-base font-medium break-words">{assessment.name}</p>
           </div>
           <div className="-mr-10 space-y-3">
             <Separator />
             <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
-              <div className="flex items-center gap-1">
-                <ScaleIcon className="size-4" />
+              <div className="flex items-center gap-1 overflow-hidden">
+                <ScaleIcon className="size-4 shrink-0" />
                 <p className="truncate">{assessment.weight}%</p>
               </div>
-              <div className="flex items-center gap-1">
-                <CalendarIcon className="size-4" />
+              <div className="flex items-center gap-1 overflow-hidden">
+                <CalendarIcon className="size-4 shrink-0" />
                 <p className="truncate">{dueDate}</p>
               </div>
             </div>
+            <AssessmentDueBadge assessment={assessment} />
           </div>
         </div>
       </GridItem>
@@ -61,7 +59,7 @@ export const AssessmentList = () => {
   }
 
   const renderListItem = (assessment: Doc<'assessments'>) => {
-    const dueDate = assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : null
+    const dueDate = assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'N/A'
     return (
       <ListItem
         key={assessment._id}
@@ -70,22 +68,20 @@ export const AssessmentList = () => {
       >
         <div className="flex items-center gap-3">
           <span className="text-lg">{assessment.icon}</span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-3">
               <p className="truncate text-base font-medium">{assessment.name}</p>
               <AssessmentDueBadge assessment={assessment} />
             </div>
             <div className="text-muted-foreground flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <ScaleIcon className="size-4" />
+              <div className="flex items-center gap-1 overflow-hidden">
+                <ScaleIcon className="size-4 shrink-0" />
                 <p className="truncate">{assessment.weight}%</p>
               </div>
-              {dueDate && (
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="size-4" />
-                  <p className="truncate">{dueDate}</p>
-                </div>
-              )}
+              <div className="flex items-center gap-1 overflow-hidden">
+                <CalendarIcon className="size-4 shrink-0" />
+                <p className="truncate">{dueDate}</p>
+              </div>
             </div>
           </div>
         </div>

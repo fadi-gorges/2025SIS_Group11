@@ -44,7 +44,7 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
           redirectTo: '/',
         })
       } catch {
-        toast.error('Invalid details')
+        toast.error('Invalid details.')
       }
     } else {
       try {
@@ -56,7 +56,7 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
           redirectTo: '/',
         })
       } catch {
-        toast.error('Please enter a valid email and password')
+        toast.error('Please enter a valid email and password.')
       }
     }
     setIsLoading(false)
