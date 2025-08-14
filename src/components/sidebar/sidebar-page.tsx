@@ -25,14 +25,16 @@ const BreadcrumbSegment = ({ item, last }: { item: { title: string; href: string
     <>
       <BreadcrumbItem className="hidden md:block">
         <BreadcrumbLink asChild>
-          <Link href={item.href}>{item.title}</Link>
+          <Link href={item.href} className="truncate">
+            {item.title}
+          </Link>
         </BreadcrumbLink>
       </BreadcrumbItem>
       <BreadcrumbSeparator className="hidden md:block" />
     </>
   ) : (
-    <BreadcrumbItem>
-      <BreadcrumbPage>{item.title}</BreadcrumbPage>
+    <BreadcrumbItem className="overflow-hidden">
+      <BreadcrumbPage className="truncate">{item.title}</BreadcrumbPage>
     </BreadcrumbItem>
   )
 }
@@ -54,8 +56,8 @@ const SidebarPage = ({ children, breadcrumb }: SidebarPageProps) => {
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="block" />
-              <Breadcrumb>
-                <BreadcrumbList>
+              <Breadcrumb className="overflow-hidden">
+                <BreadcrumbList className="flex-nowrap">
                   {breadcrumb.map((item, index) => (
                     <BreadcrumbSegment key={index} item={item} last={index === breadcrumb.length - 1} />
                   ))}

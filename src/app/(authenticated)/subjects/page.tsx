@@ -6,11 +6,11 @@ import SidebarPage from '@/components/sidebar/sidebar-page'
 import { Button } from '@/components/ui/button'
 import { PlusIcon } from 'lucide-react'
 
-const SubjectsPage = async () => {
+const SubjectListPage = async () => {
   return (
     <SidebarPage breadcrumb={[{ title: 'Subjects', href: '/subjects' }]}>
       <div className="flex flex-1 flex-col gap-4">
-        <TopBar>
+        <TopBar searchName="subjects">
           <SubjectFilterSheet />
           <SubjectFormSheet
             button={
@@ -26,4 +26,4 @@ const SubjectsPage = async () => {
   )
 }
 
-export default SubjectsPage
+export default SubjectListPage

@@ -1,8 +1,8 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
-import { assessmentFields, assessmentObject } from './schema'
-import { assessmentSchema, validateWeight, validateWithSchema } from './validation'
+import { assessmentFields, assessmentObject, gradeObject, subjectObject } from './schema'
+import { assessmentSchema, createAssessmentSchema, validateWeight, validateWithSchema } from './validation'
 
 /**
  * Create a new assessment
@@ -20,7 +20,7 @@ export const createAssessment = mutation({
   returns: v.id('assessments'),
   handler: async (ctx, args) => {
     // Validate input using composite schema
-    const validation = validateWithSchema(assessmentSchema, args)
+    const validation = validateWithSchema(createAssessmentSchema, args)
 
     if (!validation.isValid) {
       throw new ConvexError(validation.error!)
@@ -52,31 +52,49 @@ export const createAssessment = mutation({
 })
 
 /**
- * Get all assessments for a user
+ * Get all assessments for a user with filtering support
  */
 export const getAssessmentsByUser = query({
   args: {
-    includeCompleted: v.optional(assessmentFields.complete),
+    search: v.optional(v.string()),
+    complete: v.optional(assessmentFields.complete),
+    subjectId: v.optional(v.union(v.id('subjects'), v.null())),
   },
   returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx)
 
-    const includeCompleted = args.includeCompleted ?? true
+    const hasSearch = !!args.search && args.search.trim().length > 0
+    const hasSubjectFilter = args.subjectId !== undefined && args.subjectId !== null
 
-    if (includeCompleted) {
-      return await ctx.db
+    let results: any[]
+    const complete = args.complete
+    if (complete === undefined) {
+      results = await ctx.db
         .query('assessments')
         .withIndex('by_user', (q) => q.eq('userId', userId))
         .order('desc')
         .collect()
     } else {
-      return await ctx.db
+      results = await ctx.db
         .query('assessments')
-        .withIndex('by_user_and_complete', (q) => q.eq('userId', userId).eq('complete', false))
+        .withIndex('by_user_and_complete', (q) => q.eq('userId', userId).eq('complete', complete))
         .order('desc')
         .collect()
     }
+
+    // Apply search filter (case-insensitive name search)
+    if (hasSearch) {
+      const searchTerm = args.search!.toLowerCase().trim()
+      results = results.filter((assessment) => assessment.name.toLowerCase().includes(searchTerm))
+    }
+
+    // Apply subject filter
+    if (hasSubjectFilter) {
+      results = results.filter((assessment) => assessment.subjectId === args.subjectId)
+    }
+
+    return results
   },
 })
 
@@ -86,16 +104,15 @@ export const getAssessmentsByUser = query({
 export const getAssessmentsBySubject = query({
   args: {
     subjectId: assessmentFields.subjectId,
-    includeCompleted: v.optional(assessmentFields.complete),
+    complete: v.optional(assessmentFields.complete),
   },
   returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
     // Check if subject belongs to authenticated user
     await requireAuthAndOwnership(ctx, args.subjectId)
 
-    const includeCompleted = args.includeCompleted ?? true
-
-    if (includeCompleted) {
+    const complete = args.complete
+    if (complete === undefined) {
       return await ctx.db
         .query('assessments')
         .withIndex('by_subject', (q) => q.eq('subjectId', args.subjectId))
@@ -104,7 +121,7 @@ export const getAssessmentsBySubject = query({
     } else {
       return await ctx.db
         .query('assessments')
-        .withIndex('by_subject_and_complete', (q) => q.eq('subjectId', args.subjectId).eq('complete', false))
+        .withIndex('by_subject_and_complete', (q) => q.eq('subjectId', args.subjectId).eq('complete', complete))
         .order('desc')
         .collect()
     }
@@ -146,6 +163,43 @@ export const getAssessmentById = query({
   handler: async (ctx, args) => {
     const { data: assessment } = await requireAuthAndOwnership(ctx, args.assessmentId, { allowNull: true })
     return assessment
+  },
+})
+
+/**
+ * Get assessment detail with grades and subject information
+ */
+export const getAssessmentDetail = query({
+  args: {
+    assessmentId: v.id('assessments'),
+  },
+  returns: v.union(
+    v.object({
+      assessment: assessmentObject,
+      grades: v.array(gradeObject),
+      subject: subjectObject,
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const { data: assessment } = await requireAuthAndOwnership(ctx, args.assessmentId, { allowNull: true })
+    if (!assessment) return null
+
+    // Get related grades
+    const grades = await ctx.db
+      .query('grades')
+      .withIndex('by_assessment', (q) => q.eq('assessmentId', assessment._id))
+      .collect()
+
+    // Get subject information
+    const { data: subject } = await requireAuthAndOwnership(ctx, assessment.subjectId, { allowNull: true })
+    if (!subject) return null
+
+    return {
+      assessment,
+      grades,
+      subject,
+    }
   },
 })
 

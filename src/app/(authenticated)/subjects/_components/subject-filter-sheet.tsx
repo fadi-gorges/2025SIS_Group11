@@ -20,6 +20,11 @@ export const SubjectFilterSheet = () => {
   const terms = useQuery(api.subjects.getUniqueTerms, {})
   const selectedTerm = searchParams.get('term') ?? ''
 
+  const termOptions = (terms || []).map((term) => ({
+    value: term,
+    label: term,
+  }))
+
   return (
     <FilterSheet>
       <FilterSheetRadioGroup
@@ -32,7 +37,7 @@ export const SubjectFilterSheet = () => {
         title="Term"
         selectedValue={selectedTerm}
         onValueChange={(v) => setSearchParam('term', v)}
-        options={terms || []}
+        options={termOptions}
         allLabel="All terms"
       />
     </FilterSheet>

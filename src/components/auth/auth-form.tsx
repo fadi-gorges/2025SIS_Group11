@@ -34,8 +34,8 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
 
   const onSubmit = async (data: LoginData | SignupData) => {
     setIsLoading(true)
-    try {
-      if (isSignup) {
+    if (isSignup) {
+      try {
         const signupData = data as SignupData
         await signIn('password', {
           email: signupData.email,
@@ -43,7 +43,11 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
           flow: 'signUp',
           redirectTo: '/',
         })
-      } else {
+      } catch {
+        toast.error('Invalid details')
+      }
+    } else {
+      try {
         const loginData = data as LoginData
         await signIn('password', {
           email: loginData.email,
@@ -51,12 +55,11 @@ const AuthForm = ({ className, type, ...props }: AuthFormProps) => {
           flow: 'signIn',
           redirectTo: '/',
         })
+      } catch {
+        toast.error('Please enter a valid email and password')
       }
-    } catch {
-      toast.error('Please enter a valid email and password')
-    } finally {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }
 
   const handleGoogleSignIn = async () => {

@@ -73,7 +73,7 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
           <SheetDescription>Create a subject to organize your assessments.</SheetDescription>
         </SheetHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 overflow-y-auto p-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto p-4">
             <FormField
               control={form.control}
               name="name"

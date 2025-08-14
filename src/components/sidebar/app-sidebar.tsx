@@ -25,16 +25,6 @@ const data = {
       icon: LayoutDashboardIcon,
     },
     {
-      title: 'Timeline',
-      url: '/timeline',
-      icon: Rows3Icon,
-    },
-    {
-      title: 'Tasks',
-      url: '/tasks',
-      icon: KanbanSquareIcon,
-    },
-    {
       title: 'Subjects',
       url: '/subjects',
       icon: BookOpenIcon,
@@ -43,6 +33,16 @@ const data = {
       title: 'Assessments',
       url: '/assessments',
       icon: ClipboardListIcon,
+    },
+    {
+      title: 'Timeline',
+      url: '/timeline',
+      icon: Rows3Icon,
+    },
+    {
+      title: 'Tasks',
+      url: '/tasks',
+      icon: KanbanSquareIcon,
     },
     {
       title: 'Settings',

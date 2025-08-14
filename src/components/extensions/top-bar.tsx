@@ -7,7 +7,12 @@ import { useDebouncedSearch } from '@/lib/utils'
 import { BookOpenIcon, GridIcon, ListIcon } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
-export const TopBar = ({ children }: { children: React.ReactNode }) => {
+type TopBarProps = {
+  searchName: string
+  children: React.ReactNode
+}
+
+export const TopBar = ({ children, searchName }: TopBarProps) => {
   const params = useSearchParams()
 
   const view = (params.get('view') as 'list' | 'grid' | null) ?? 'grid'
@@ -22,7 +27,7 @@ export const TopBar = ({ children }: { children: React.ReactNode }) => {
         <Input
           defaultValue={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search subjects..."
+          placeholder={`Search ${searchName}...`}
           className="pl-8"
         />
         <BookOpenIcon className="text-muted-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />

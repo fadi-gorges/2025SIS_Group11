@@ -21,12 +21,12 @@ import {
   UserIcon,
   XIcon,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { api } from '../../../../../convex/_generated/api'
-import { Doc } from '../../../../../convex/_generated/dataModel'
 import { subjectSchema, VALIDATION_LIMITS } from '../../../../../convex/validation'
 import SubjectActionsMenu from '../_components/subject-actions-menu'
 
@@ -35,11 +35,9 @@ type SubjectDetailProps = {
 }
 
 const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
-  const detail = usePreloadedQuery(preloadedDetail) as {
-    subject: Doc<'subjects'>
-    assessments: Array<Doc<'assessments'>>
-  }
-  const subject = detail.subject
+  const router = useRouter()
+  const detail = usePreloadedQuery(preloadedDetail)
+  const subject = detail?.subject
   const updateSubject = useMutation(api.subjects.updateSubject)
   const [isEditing, setIsEditing] = useState(false)
 
@@ -55,7 +53,12 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
     },
   })
 
-  // Keep form in sync with latest data when not actively editing
+  useEffect(() => {
+    if (!detail) {
+      router.push('/subjects')
+    }
+  }, [detail, router])
+
   useEffect(() => {
     if (!isEditing && subject) {
       form.reset({
@@ -68,6 +71,10 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
       })
     }
   }, [subject, isEditing, form])
+
+  if (!subject) {
+    return null
+  }
 
   const onSubmit = async (data: z.infer<typeof subjectSchema>) => {
     try {
@@ -140,7 +147,7 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
                     >
                       <XIcon className="h-4 w-4" />
                     </Button>
-                    <Button size="icon" type="submit" loading={form.formState.isSubmitting}>
+                    <Button size="icon" type="submit" disabled={form.formState.isSubmitting}>
                       <CheckIcon className="h-4 w-4" />
                     </Button>
                   </>
@@ -322,7 +329,7 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
               <div className="space-y-2">
                 <div className="text-2xl font-bold">{detail.assessments.length}</div>
                 <div className="text-muted-foreground text-xs">
-                  {detail.assessments.filter((a) => a.complete).length} completed
+                  {detail.assessments.filter((a) => a.complete).length} complete
                 </div>
               </div>
             </div>

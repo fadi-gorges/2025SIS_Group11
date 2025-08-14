@@ -255,6 +255,9 @@ export const assessmentSchema = z.object({
   description: assessmentDescriptionSchema,
   dueDate: assessmentDueDateSchema,
 })
+export const createAssessmentSchema = assessmentSchema.extend({
+  subjectId: z.string().min(1, 'Please select a subject'),
+})
 
 /**
  * Complete grade schema
@@ -272,6 +275,7 @@ export type ReminderFormData = z.infer<typeof reminderFormSchema>
 export type UserData = z.infer<typeof userSchema>
 export type SubjectData = z.infer<typeof subjectSchema>
 export type AssessmentData = z.infer<typeof assessmentSchema>
+export type CreateAssessmentData = z.infer<typeof createAssessmentSchema>
 export type GradeData = z.infer<typeof gradeSchema>
 
 // =============================================================================

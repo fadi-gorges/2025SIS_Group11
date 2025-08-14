@@ -1,6 +1,7 @@
 import { authTables } from '@convex-dev/auth/server'
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { assessmentIcons } from './validation'
 
 // =============================================================================
 // REUSABLE FIELD OBJECTS
@@ -41,7 +42,7 @@ export const subjectFields = {
  */
 export const assessmentFields = {
   name: v.string(),
-  icon: v.string(),
+  icon: v.union(...assessmentIcons.map((icon) => v.literal(icon))),
   contribution: v.union(v.literal('individual'), v.literal('group')),
   weight: v.number(),
   description: v.optional(v.string()),

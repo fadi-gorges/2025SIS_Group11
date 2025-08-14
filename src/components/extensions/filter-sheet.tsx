@@ -47,11 +47,11 @@ const FilterSheetRadioGroup = ({
   title: string
   value: string
   onValueChange: (value: string) => void
-  options: Array<{
+  options: {
     value: string
     label: string
     id?: string
-  }>
+  }[]
 }) => {
   return (
     <FilterSheetSection className={className} {...props}>
@@ -81,25 +81,29 @@ const FilterSheetButtonGroup = ({
   title: string
   selectedValue: string
   onValueChange: (value: string | undefined) => void
-  options: string[]
+  options: {
+    value: string
+    label: string
+    id?: string
+  }[]
   allLabel?: string
 }) => {
-  const allOptions = [''].concat(options)
+  const allOptions = [{ value: '', label: allLabel }].concat(options)
 
   return (
     <FilterSheetSection className={className} {...props}>
       <FilterSheetSectionTitle>{title}</FilterSheetSectionTitle>
       <div className="flex flex-wrap gap-2">
         {allOptions.map((option) => {
-          const isAll = option === ''
-          const label = isAll ? allLabel : option
-          const active = selectedValue === option
+          const isAll = option.value === ''
+          const label = isAll ? allLabel : option.label
+          const active = selectedValue === option.value
 
           return (
             <Button
               key={label}
               variant={active ? 'secondary' : 'outline'}
-              onClick={() => onValueChange(isAll ? undefined : option)}
+              onClick={() => onValueChange(isAll ? undefined : option.value)}
               className="rounded-md border px-3 py-1 text-sm"
               aria-pressed={active}
             >

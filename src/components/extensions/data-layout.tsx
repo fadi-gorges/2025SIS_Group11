@@ -64,14 +64,26 @@ type ItemProps = React.ComponentProps<'div'> & {
 
 const GridItem = ({ href, className, children, actions }: ItemProps) => {
   const content = (
-    <Card className={cn('hover:bg-muted/75 flex flex-col gap-1 p-4 transition-colors', actions && 'pr-12', className)}>
+    <Card
+      className={cn(
+        'hover:bg-muted/75 flex h-full flex-col gap-1 p-4 transition-colors',
+        actions && 'pr-14',
+        className,
+      )}
+    >
       {children}
     </Card>
   )
 
   return (
-    <div className="relative">
-      {href ? <Link href={href}>{content}</Link> : content}
+    <div className="relative h-full">
+      {href ? (
+        <Link href={href} className="block h-full">
+          {content}
+        </Link>
+      ) : (
+        content
+      )}
       {actions && <div className="absolute top-4 right-4 z-10">{actions}</div>}
     </div>
   )
@@ -99,7 +111,7 @@ const ListItem = ({ href, className, children, actions }: ItemProps) => {
 }
 
 const GridLayout = ({ children }: React.ComponentProps<'div'>) => (
-  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
 )
 
 const ListLayout = ({ children }: { children: React.ReactNode }) => (
@@ -107,9 +119,9 @@ const ListLayout = ({ children }: { children: React.ReactNode }) => (
 )
 
 const GridSkeleton = ({ count = 6 }: { count?: number }) => (
-  <GridLayout className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  <GridLayout>
     {Array.from({ length: count }).map((_, index) => (
-      <Card key={index} className="flex flex-col gap-1 p-4 opacity-50">
+      <Card key={index} className="flex h-full flex-col gap-1 p-4 opacity-50">
         <div className="flex items-center gap-2">
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-5 w-16" />
