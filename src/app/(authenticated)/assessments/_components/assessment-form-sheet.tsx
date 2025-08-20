@@ -1,8 +1,7 @@
 'use client'
 
-import TimeInput from '@/components/extensions/time-input'
+import DateTimeInput from '@/components/datetime/date-time-input'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -22,21 +21,19 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils/cn'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from 'convex/react'
-import { format } from 'date-fns'
-import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown } from 'lucide-react'
 import { useRouter } from 'nextjs-toploader/app'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { api } from '../../../../../convex/_generated/api'
 import { Id } from '../../../../../convex/_generated/dataModel'
-import { assessmentIcons, createAssessmentSchema, VALIDATION_LIMITS } from '../../../../../convex/validation'
-
-const createAssessmentWithDueTimeSchema = createAssessmentSchema.extend({
-  dueTime: z.string().optional(),
-})
-type CreateAssessmentWithDueTimeData = z.infer<typeof createAssessmentWithDueTimeSchema>
+import {
+  assessmentIcons,
+  CreateAssessmentData,
+  createAssessmentSchema,
+  VALIDATION_LIMITS,
+} from '../../../../../convex/validation'
 
 type AssessmentFormSheetProps = {
   button: React.ReactNode
@@ -49,8 +46,8 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
   const createAssessment = useMutation(api.assessments.createAssessment)
   const subjects = useQuery(api.subjects.getSubjectsByUser, { archived: 'unarchived' })
 
-  const form = useForm<CreateAssessmentWithDueTimeData>({
-    resolver: zodResolver(createAssessmentWithDueTimeSchema as any),
+  const form = useForm<CreateAssessmentData>({
+    resolver: zodResolver(createAssessmentSchema as any),
     defaultValues: {
       name: '',
       icon: '📝',
@@ -58,34 +55,19 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
       weight: 0,
       description: '',
       dueDate: undefined,
-      dueTime: '23:59',
       subjectId: '',
     },
   })
 
-  const onSubmit = async (data: CreateAssessmentWithDueTimeData) => {
+  const onSubmit = async (data: CreateAssessmentData) => {
     try {
-      let combinedDueDate: number | undefined = undefined
-      if (data.dueDate) {
-        const date = new Date(data.dueDate)
-
-        if (data.dueTime) {
-          const [hours, minutes] = data.dueTime.split(':').map(Number)
-          date.setHours(hours, minutes, 0, 0)
-        } else {
-          date.setHours(23, 59, 0, 0)
-        }
-
-        combinedDueDate = date.getTime()
-      }
-
       const id = await createAssessment({
         name: data.name,
         icon: data.icon,
         contribution: data.contribution,
         weight: data.weight,
         description: data.description || undefined,
-        dueDate: combinedDueDate,
+        dueDate: data.dueDate,
         subjectId: data.subjectId as Id<'subjects'>,
       })
       toast.success('Assessment has been created.')
@@ -255,7 +237,8 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
                       max={VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX}
                       placeholder="e.g., 25"
                       {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      value={field.value.toString()}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -263,55 +246,24 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
               )}
             />
 
-            <div className="flex gap-4">
-              {/* Due Date */}
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem className="flex w-full flex-col">
-                    <FormLabel>Due Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
-                          >
-                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => field.onChange(date?.getTime())}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Due Time */}
-              <FormField
-                control={form.control}
-                name="dueTime"
-                render={({ field }) => (
-                  <FormItem className="w-full">
-                    <FormLabel>Due Time</FormLabel>
-                    <FormControl>
-                      <TimeInput {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Due Date */}
+            <FormField
+              control={form.control}
+              name="dueDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Due Date</FormLabel>
+                  <FormControl>
+                    <DateTimeInput
+                      value={field.value ? new Date(field.value) : undefined}
+                      onChange={(date: Date | undefined) => field.onChange(date?.getTime())}
+                      className="w-full"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Description */}
             <FormField

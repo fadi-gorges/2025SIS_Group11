@@ -243,7 +243,10 @@ export const updateAssessment = mutation({
       }
     }
 
-    await ctx.db.patch(args.assessmentId, validation.data)
+    await ctx.db.patch(args.assessmentId, {
+      ...validation.data,
+      dueDate: validation.data.dueDate ?? undefined,
+    })
   },
 })
 

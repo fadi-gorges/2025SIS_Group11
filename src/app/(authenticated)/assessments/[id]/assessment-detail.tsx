@@ -1,10 +1,12 @@
 'use client'
 
+import DateTimeInput from '@/components/datetime/date-time-input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDate } from '@/lib/utils/format-date'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -86,8 +88,8 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
         icon: data.icon,
         contribution: data.contribution,
         weight: data.weight,
-        description: data.description || undefined,
-        dueDate: data.dueDate ? data.dueDate : undefined,
+        description: data.description,
+        dueDate: data.dueDate,
       })
       toast.success('Assessment has been updated.')
       setIsEditing(false)
@@ -172,7 +174,7 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
             </div>
 
             {/* Assessment info with icons */}
-            <div className="text-muted-foreground flex flex-wrap items-center gap-6 text-sm">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               {/* Weight */}
               <div className="flex items-center gap-2">
                 <ScaleIcon className="h-4 w-4" />
@@ -184,12 +186,13 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
                       <FormItem>
                         <FormControl>
                           <Input
-                            {...field}
                             type="number"
                             min={VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MIN}
                             max={VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX}
                             className="text-muted-foreground h-auto w-16 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            {...field}
+                            value={field.value.toString()}
+                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -208,24 +211,60 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
                 ) : (
                   <UserIcon className="h-4 w-4" />
                 )}
-                <span className="capitalize">{assessment.contribution}</span>
+                {isEditing ? (
+                  <FormField
+                    control={form.control}
+                    name="contribution"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="text-muted-foreground h-auto border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="individual">Individual</SelectItem>
+                              <SelectItem value="group">Group</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <span className="capitalize">{assessment.contribution}</span>
+                )}
               </div>
 
               {/* Due Date */}
-              {(assessment.dueDate || isEditing) && (
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  {isEditing ? (
-                    <span>Due date editing in form</span>
-                  ) : (
-                    <span>{assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'No due date'}</span>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                {isEditing ? (
+                  <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <DateTimeInput
+                            showIcon={false}
+                            value={field.value ? new Date(field.value) : undefined}
+                            onChange={(date: Date | undefined) => field.onChange(date?.getTime())}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <span>{assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'No due date'}</span>
+                )}
+              </div>
             </div>
 
             {/* Description */}
-            <div className="max-w-4xl">
+            <div>
               {isEditing ? (
                 <FormField
                   control={form.control}

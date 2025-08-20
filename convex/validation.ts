@@ -25,6 +25,7 @@ export const VALIDATION_LIMITS = {
   ASSESSMENT_TASK_MAX_LENGTH: 2000,
   ASSESSMENT_WEIGHT_MIN: 0,
   ASSESSMENT_WEIGHT_MAX: 100,
+  ASSESSMENT_WEIGHT_STEP: 0.01,
 
   // Grade limits
   GRADE_NAME_MAX_LENGTH: 75,
@@ -140,6 +141,7 @@ export const assessmentWeightSchema = z
     VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX,
     `Weight must be no more than ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX}`,
   )
+  .transform((val) => +val.toFixed(2))
 export const assessmentDescriptionSchema = z
   .string()
   .trim()

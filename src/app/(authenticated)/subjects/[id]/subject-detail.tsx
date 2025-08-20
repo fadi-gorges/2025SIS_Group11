@@ -267,7 +267,7 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
             </div>
 
             {/* Description */}
-            <div className="max-w-4xl">
+            <div>
               {isEditing ? (
                 <FormField
                   control={form.control}
