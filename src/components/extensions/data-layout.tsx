@@ -48,6 +48,7 @@ type EmptyStateConfig = {
 
 type DataLayoutProps<T> = React.ComponentProps<'div'> & {
   data: T[] | undefined
+  view?: 'grid' | 'list'
   renderGridItem: (item: T, index: number) => React.ReactNode
   renderListItem: (item: T, index: number) => React.ReactNode
   emptyState: EmptyStateConfig
@@ -174,11 +175,12 @@ export const DataLayout = <T,>({
   renderListItem,
   emptyState,
   skeleton = { count: 6 },
+  view: _view,
 }: DataLayoutProps<T>) => {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const view = (searchParams.get('view') as 'list' | 'grid' | null) ?? 'grid'
+  const view = _view ?? (searchParams.get('view') as 'list' | 'grid' | null) ?? 'grid'
   const page = Number(searchParams.get('page') ?? 1)
 
   const totalItems = data?.length ?? 0
@@ -210,7 +212,7 @@ export const DataLayout = <T,>({
   }
 
   return (
-    <div className={cn('flex flex-1 flex-col gap-4 pb-6', className)}>
+    <div className={cn('flex flex-1 flex-col gap-4', className)}>
       <div className="flex-1">{renderContent()}</div>
       {totalPages > 1 && (
         <div className="flex justify-center">

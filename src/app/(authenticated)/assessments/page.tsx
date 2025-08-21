@@ -33,7 +33,7 @@ const AssessmentListPage = async ({
 
   return (
     <SidebarPage breadcrumb={[{ title: 'Assessments' }]}>
-      <div className="flex flex-1 flex-col gap-4">
+      <div className="flex flex-1 flex-col gap-4 pb-6">
         <TopBar searchName="assessments">
           <AssessmentFilterSheet preloadedSubjects={preloadedSubjects} />
           <AssessmentFormSheet

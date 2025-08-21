@@ -1,5 +1,11 @@
 'use client'
 import {
+  BorderedCard,
+  BorderedCardContent,
+  BorderedCardHeader,
+  BorderedCardTitle,
+} from '@/components/page/bordered-card'
+import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
@@ -10,7 +16,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useMutation } from 'convex/react'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -32,11 +37,11 @@ const SecuritySettings = () => {
     }
   }
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Security</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <BorderedCard>
+      <BorderedCardHeader>
+        <BorderedCardTitle>Security</BorderedCardTitle>
+      </BorderedCardHeader>
+      <BorderedCardContent className="space-y-4">
         <div className="flex flex-wrap gap-3">
           {/* <Dialog>
             <DialogTrigger asChild>
@@ -94,8 +99,8 @@ const SecuritySettings = () => {
             </AlertDialogContent>
           </AlertDialog>
         </div>
-      </CardContent>
-    </Card>
+      </BorderedCardContent>
+    </BorderedCard>
   )
 }
 

@@ -1,6 +1,11 @@
 'use client'
+import {
+  BorderedCard,
+  BorderedCardContent,
+  BorderedCardHeader,
+  BorderedCardTitle,
+} from '@/components/page/bordered-card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -80,11 +85,11 @@ const ProfileSettings = () => {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <BorderedCard>
+        <BorderedCardHeader>
+          <BorderedCardTitle>Profile</BorderedCardTitle>
+        </BorderedCardHeader>
+        <BorderedCardContent className="space-y-4">
           <Form {...profileForm}>
             <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -131,13 +136,13 @@ const ProfileSettings = () => {
               </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Reminders</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </BorderedCardContent>
+      </BorderedCard>
+      <BorderedCard>
+        <BorderedCardHeader>
+          <BorderedCardTitle>Reminders</BorderedCardTitle>
+        </BorderedCardHeader>
+        <BorderedCardContent className="space-y-4">
           <Form {...reminderForm}>
             <form onSubmit={reminderForm.handleSubmit(onReminderSubmit)} className="space-y-4">
               <p className="text-muted-foreground text-sm">
@@ -195,8 +200,8 @@ const ProfileSettings = () => {
               </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </BorderedCardContent>
+      </BorderedCard>
     </>
   )
 }

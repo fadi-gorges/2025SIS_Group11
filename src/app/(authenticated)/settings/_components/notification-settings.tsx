@@ -1,5 +1,10 @@
 'use client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  BorderedCard,
+  BorderedCardContent,
+  BorderedCardHeader,
+  BorderedCardTitle,
+} from '@/components/page/bordered-card'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { useState } from 'react'
@@ -9,11 +14,11 @@ const NotificationSettings = () => {
   const [weeklySummary, setWeeklySummary] = useState(true)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Notifications</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <BorderedCard>
+      <BorderedCardHeader>
+        <BorderedCardTitle>Notifications</BorderedCardTitle>
+      </BorderedCardHeader>
+      <BorderedCardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <div className="font-medium">Email notifications</div>
@@ -29,8 +34,8 @@ const NotificationSettings = () => {
           </div>
           <Switch checked={weeklySummary} onCheckedChange={setWeeklySummary} />
         </div>
-      </CardContent>
-    </Card>
+      </BorderedCardContent>
+    </BorderedCard>
   )
 }
 

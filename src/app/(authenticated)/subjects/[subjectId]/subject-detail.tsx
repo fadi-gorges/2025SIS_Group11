@@ -1,9 +1,14 @@
 'use client'
 
 import AssessmentList from '@/app/(authenticated)/assessments/_components/assessment-list'
+import {
+  BorderedCard,
+  BorderedCardContent,
+  BorderedCardHeader,
+  BorderedCardTitle,
+} from '@/components/page/bordered-card'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
@@ -309,58 +314,65 @@ const SubjectDetail = ({ preloadedSubject, preloadedAssessments }: SubjectDetail
         {/* Progress & Overview Cards */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Progress Card */}
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Overall Grade</h3>
+          <BorderedCard>
+            <BorderedCardHeader className="justify-between">
+              <BorderedCardTitle>Overall Grade</BorderedCardTitle>
+            </BorderedCardHeader>
+            <BorderedCardContent className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Progress value={Math.max(0, Math.min(100, subject.totalGrade ?? 0))} className="h-3" />
                 <span className="text-primary text-2xl font-bold">{Math.round(subject.totalGrade ?? 0)}%</span>
               </div>
-              <Progress value={Math.max(0, Math.min(100, subject.totalGrade ?? 0))} className="h-3" />
               <p className="text-muted-foreground text-xs">
                 Based on {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
               </p>
-            </div>
-          </Card>
+            </BorderedCardContent>
+          </BorderedCard>
 
           {/* Assessments Card */}
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Assessments</h3>
-                <FileTextIcon className="h-5 w-5" />
+          <BorderedCard>
+            <BorderedCardHeader className="justify-between">
+              <BorderedCardTitle>Assessments</BorderedCardTitle>
+              <FileTextIcon className="h-5 w-5" />
+            </BorderedCardHeader>
+            <BorderedCardContent className="space-y-4">
+              <div className="text-2xl font-bold">{assessments.length}</div>
+              <div className="text-muted-foreground text-xs">
+                {assessments.filter((a) => a.complete).length} complete
               </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">{assessments.length}</div>
-                <div className="text-muted-foreground text-xs">
-                  {assessments.filter((a) => a.complete).length} complete
-                </div>
-              </div>
-            </div>
-          </Card>
+            </BorderedCardContent>
+          </BorderedCard>
         </div>
 
         {/* Assessments Overview */}
         {!!assessments.length && (
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Assessments</h3>
-                <Link
-                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                  href={`/assessments?subject=${subject._id}`}
-                >
-                  View All
-                </Link>
-              </div>
-              <AssessmentList preloadedAssessments={preloadedAssessments} hasFilter={false} />
-            </div>
-          </Card>
+          <BorderedCard>
+            <BorderedCardHeader className="justify-between">
+              <BorderedCardTitle>Assessments</BorderedCardTitle>
+              <Link
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                href={`/assessments?subject=${subject._id}`}
+              >
+                View All
+              </Link>
+            </BorderedCardHeader>
+            <BorderedCardContent className="space-y-4">
+              <AssessmentList
+                preloadedAssessments={preloadedAssessments}
+                hasFilter={false}
+                view="grid"
+                itemsPerPage={3}
+              />
+            </BorderedCardContent>
+          </BorderedCard>
         )}
 
         {/* Quick Access */}
-        <Card className="p-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Quick Access</h3>
+        <BorderedCard>
+          <BorderedCardHeader>
+            <BorderedCardTitle>Quick Access</BorderedCardTitle>
+          </BorderedCardHeader>
+          <BorderedCardContent>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
               <button className="hover:bg-muted/50 flex items-center gap-4 rounded-lg border p-4 text-left transition-colors">
                 <BookOpenIcon className="text-muted-foreground h-6 w-6 shrink-0" />
@@ -384,8 +396,8 @@ const SubjectDetail = ({ preloadedSubject, preloadedAssessments }: SubjectDetail
                 </div>
               </button>
             </div>
-          </div>
-        </Card>
+          </BorderedCardContent>
+        </BorderedCard>
       </form>
     </Form>
   )

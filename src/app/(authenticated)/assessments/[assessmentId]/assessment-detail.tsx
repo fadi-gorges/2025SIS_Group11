@@ -1,8 +1,13 @@
 'use client'
 
 import DateTimeInput from '@/components/datetime/date-time-input'
+import {
+  BorderedCard,
+  BorderedCardContent,
+  BorderedCardHeader,
+  BorderedCardTitle,
+} from '@/components/page/bordered-card'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
@@ -296,44 +301,43 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
         {/* Progress & Overview Cards */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Grade Overview Card */}
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Grade Overview</h3>
-                <span className="text-primary text-2xl font-bold">{Math.round(averageGrade)}%</span>
-              </div>
+          <BorderedCard>
+            <BorderedCardHeader className="justify-between">
+              <BorderedCardTitle>Grade Overview</BorderedCardTitle>
+              <span className="text-primary text-2xl font-bold">{Math.round(averageGrade)}%</span>
+            </BorderedCardHeader>
+            <BorderedCardContent className="space-y-4">
               <Progress value={Math.max(0, Math.min(100, averageGrade))} className="h-3" />
               <p className="text-muted-foreground text-xs">
                 Average from {detail.grades.length} grade{detail.grades.length !== 1 ? 's' : ''}
               </p>
-            </div>
-          </Card>
+            </BorderedCardContent>
+          </BorderedCard>
 
           {/* Weight Card */}
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Weight</h3>
-                <TargetIcon className="h-5 w-5" />
-              </div>
+          <BorderedCard>
+            <BorderedCardHeader className="justify-between">
+              <BorderedCardTitle>Weight</BorderedCardTitle>
+              <TargetIcon className="h-5 w-5" />
+            </BorderedCardHeader>
+            <BorderedCardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="text-2xl font-bold">{assessment.weight}%</div>
                 <div className="text-muted-foreground text-xs">of total subject grade</div>
               </div>
-            </div>
-          </Card>
+            </BorderedCardContent>
+          </BorderedCard>
         </div>
 
         {/* Grades Section */}
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Grades</h3>
-              <Button variant="outline" size="sm">
-                <PlusIcon className="size-4" /> Add Grade
-              </Button>
-            </div>
-
+        <BorderedCard>
+          <BorderedCardHeader className="justify-between">
+            <BorderedCardTitle>Grades</BorderedCardTitle>
+            <Button variant="outline" size="sm">
+              <PlusIcon className="size-4" /> Add Grade
+            </Button>
+          </BorderedCardHeader>
+          <BorderedCardContent className="space-y-4">
             {detail.grades.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {detail.grades.map((grade) => (
@@ -357,8 +361,8 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
                 <p className="text-muted-foreground mt-2">Add grades to track your performance on this assessment.</p>
               </div>
             )}
-          </div>
-        </Card>
+          </BorderedCardContent>
+        </BorderedCard>
       </form>
     </Form>
   )

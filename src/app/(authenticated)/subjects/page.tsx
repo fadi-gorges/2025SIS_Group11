@@ -33,7 +33,7 @@ const SubjectListPage = async ({
 
   return (
     <SidebarPage breadcrumb={[{ title: 'Subjects' }]}>
-      <div className="flex flex-1 flex-col gap-4">
+      <div className="flex flex-1 flex-col gap-4 pb-6">
         <TopBar searchName="subjects">
           <SubjectFilterSheet preloadedTerms={preloadedTerms} />
           <SubjectFormSheet

@@ -16,10 +16,14 @@ export const AssessmentList = ({
   preloadedAssessments,
   hasFilter,
   preloadedSubjects,
+  view,
+  itemsPerPage,
 }: {
   preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
   hasFilter: boolean
   preloadedSubjects?: Preloaded<typeof api.subjects.getSubjectsByUser>
+  view?: 'grid' | 'list'
+  itemsPerPage?: number
 }) => {
   const assessments = usePreloadedQuery(preloadedAssessments)
 
@@ -111,9 +115,11 @@ export const AssessmentList = ({
   return (
     <DataLayout
       data={assessments}
+      view={view}
       renderGridItem={renderGridItem}
       renderListItem={renderListItem}
       emptyState={emptyState}
+      itemsPerPage={itemsPerPage}
     />
   )
 }
