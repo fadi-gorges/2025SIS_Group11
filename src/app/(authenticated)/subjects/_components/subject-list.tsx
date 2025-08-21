@@ -5,24 +5,19 @@ import { DataLayout, GridItem, ListItem } from '@/components/extensions/data-lay
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { useQuery } from 'convex/react'
+import { Preloaded, usePreloadedQuery } from 'convex/react'
 import { BookIcon, BookOpenIcon, CalendarIcon, HashIcon, PlusIcon } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
 import { api } from '../../../../../convex/_generated/api'
 import { SubjectActionsMenu } from './subject-actions-menu'
 
-export const SubjectList = () => {
-  const params = useSearchParams()
-  const search = params.get('search') ?? ''
-  const archived = (params.get('archived') as 'unarchived' | 'archived' | 'all' | undefined) ?? 'unarchived'
-  const term = params.get('term') ?? null
-  const hasFilter = !!search || !!term
-
-  const subjects = useQuery(api.subjects.getSubjectsByUser, {
-    search,
-    archived,
-    term,
-  })
+export const SubjectList = ({
+  preloadedSubjects,
+  hasFilter,
+}: {
+  preloadedSubjects: Preloaded<typeof api.subjects.getSubjectsByUser>
+  hasFilter: boolean
+}) => {
+  const subjects = usePreloadedQuery(preloadedSubjects)
 
   const renderGridItem = (s: any) => {
     return (

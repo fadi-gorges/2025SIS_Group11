@@ -4,27 +4,24 @@ import { DataLayout, GridItem, ListItem } from '@/components/extensions/data-lay
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { formatDate } from '@/lib/utils/format-date'
-import { useQuery } from 'convex/react'
+import { Preloaded, usePreloadedQuery } from 'convex/react'
 import { CalendarIcon, FileTextIcon, PlusIcon, ScaleIcon } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
 import { api } from '../../../../../convex/_generated/api'
 import { Doc } from '../../../../../convex/_generated/dataModel'
 import { AssessmentActionsMenu } from './assessment-actions-menu'
 import AssessmentDueBadge from './assessment-due-badge'
 import AssessmentFormSheet from './assessment-form-sheet'
 
-export const AssessmentList = () => {
-  const params = useSearchParams()
-  const search = params.get('search') ?? ''
-  const complete = (params.get('complete') as 'incomplete' | 'complete' | 'all' | undefined) ?? 'all'
-  const subjectId = params.get('subject') ?? null
-  const hasFilter = !!search || complete !== 'all' || !!subjectId
-
-  const assessments = useQuery(api.assessments.getAssessmentsByUser, {
-    search,
-    complete: complete === 'all' ? undefined : complete === 'complete',
-    subjectId: subjectId as any,
-  })
+export const AssessmentList = ({
+  preloadedAssessments,
+  hasFilter,
+  preloadedSubjects,
+}: {
+  preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
+  hasFilter: boolean
+  preloadedSubjects?: Preloaded<typeof api.subjects.getSubjectsByUser>
+}) => {
+  const assessments = usePreloadedQuery(preloadedAssessments)
 
   const renderGridItem = (assessment: Doc<'assessments'>) => {
     const dueDate = assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'N/A'
@@ -101,6 +98,7 @@ export const AssessmentList = () => {
         icon: FileTextIcon,
         button: (
           <AssessmentFormSheet
+            preloadedSubjects={preloadedSubjects}
             button={
               <Button size="sm">
                 <PlusIcon className="size-4" /> Add Assessment

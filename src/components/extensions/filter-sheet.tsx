@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -9,12 +10,21 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { cn } from '@/lib/utils/cn'
 import { FilterIcon } from 'lucide-react'
 
-const FilterSheet = ({ children, ...props }: React.ComponentProps<typeof Sheet>) => {
+const FilterSheet = ({
+  filterCount,
+  children,
+  ...props
+}: React.ComponentProps<typeof Sheet> & { filterCount?: number }) => {
   return (
     <Sheet {...props}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="relative">
           <FilterIcon className="mr-2 size-4" /> Filter
+          {!!filterCount && (
+            <Badge className="absolute -top-2 left-full aspect-square min-w-4.5 -translate-x-1/2 rounded-full px-1 text-[0.6rem]">
+              {filterCount > 9 ? '9+' : filterCount}
+            </Badge>
+          )}
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full max-w-md">
@@ -79,7 +89,7 @@ const FilterSheetButtonGroup = ({
   ...props
 }: React.ComponentProps<typeof FilterSheetSection> & {
   title: string
-  selectedValue: string
+  selectedValue: string | undefined
   onValueChange: (value: string | undefined) => void
   options: {
     value: string

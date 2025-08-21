@@ -3,7 +3,7 @@ import SidebarPage from '@/components/sidebar/sidebar-page'
 
 const TimelinePage = () => {
   return (
-    <SidebarPage breadcrumb={[{ title: 'Timeline', href: '/timeline' }]}>
+    <SidebarPage breadcrumb={[{ title: 'Timeline' }]}>
       <Heading title="Timeline" />
     </SidebarPage>
   )

@@ -1,4 +1,4 @@
-import AssessmentDetail from '@/app/(authenticated)/assessments/[id]/assessment-detail'
+import AssessmentDetail from '@/app/(authenticated)/assessments/[assessmentId]/assessment-detail'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import { convexAuthNextjsToken } from '@convex-dev/auth/nextjs/server'
 import { preloadedQueryResult, preloadQuery } from 'convex/nextjs'
@@ -6,10 +6,10 @@ import { notFound } from 'next/navigation'
 import { api } from '../../../../../convex/_generated/api'
 import { Id } from '../../../../../convex/_generated/dataModel'
 
-const AssessmentPage = async ({ params }: { params: Promise<{ id: Id<'assessments'> }> }) => {
-  const { id } = await params
+const AssessmentPage = async ({ params }: { params: Promise<{ assessmentId: Id<'assessments'> }> }) => {
+  const { assessmentId } = await params
   const token = await convexAuthNextjsToken()
-  const preloadedDetail = await preloadQuery(api.assessments.getAssessmentDetail, { assessmentId: id }, { token })
+  const preloadedDetail = await preloadQuery(api.assessments.getAssessmentDetail, { assessmentId }, { token })
   const detail = preloadedQueryResult(preloadedDetail)
 
   if (!detail) {
@@ -17,12 +17,7 @@ const AssessmentPage = async ({ params }: { params: Promise<{ id: Id<'assessment
   }
 
   return (
-    <SidebarPage
-      breadcrumb={[
-        { title: 'Assessments', href: '/assessments' },
-        { title: detail.assessment.name, href: `/assessments/${detail.assessment._id}` },
-      ]}
-    >
+    <SidebarPage breadcrumb={[{ title: 'Assessments', href: '/assessments' }, { title: detail.assessment.name }]}>
       <AssessmentDetail preloadedDetail={preloadedDetail} />
     </SidebarPage>
   )

@@ -2,7 +2,7 @@
 
 import { FilterSheet, FilterSheetButtonGroup, FilterSheetRadioGroup } from '@/components/extensions/filter-sheet'
 import { useSetSearchParam } from '@/hooks/use-set-search-param'
-import { useQuery } from 'convex/react'
+import { Preloaded, usePreloadedQuery } from 'convex/react'
 import { useSearchParams } from 'next/navigation'
 import { api } from '../../../../../convex/_generated/api'
 
@@ -12,13 +12,18 @@ const completionOptions = [
   { value: 'complete', label: 'Complete' },
 ]
 
-export const AssessmentFilterSheet = () => {
+export const AssessmentFilterSheet = ({
+  preloadedSubjects,
+}: {
+  preloadedSubjects: Preloaded<typeof api.subjects.getSubjectsByUser>
+}) => {
   const searchParams = useSearchParams()
   const setSearchParam = useSetSearchParam()
 
+  const subjects = usePreloadedQuery(preloadedSubjects)
   const complete = (searchParams.get('complete') as 'all' | 'incomplete' | 'complete' | null) ?? 'all'
-  const subjects = useQuery(api.subjects.getSubjectsByUser, { archived: 'unarchived' })
-  const selectedSubject = searchParams.get('subject') ?? ''
+  const selectedSubject = searchParams.get('subject') ?? undefined
+  const filterCount = [complete !== 'all', selectedSubject !== undefined].filter(Boolean).length
 
   const subjectOptions = (subjects || []).map((subject) => ({
     value: subject._id,
@@ -26,7 +31,7 @@ export const AssessmentFilterSheet = () => {
   }))
 
   return (
-    <FilterSheet>
+    <FilterSheet filterCount={filterCount}>
       <FilterSheetRadioGroup
         title="Completion Status"
         value={complete}

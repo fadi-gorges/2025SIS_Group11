@@ -176,10 +176,10 @@ export const DataLayout = <T,>({
   skeleton = { count: 6 },
 }: DataLayoutProps<T>) => {
   const router = useRouter()
-  const params = useSearchParams()
+  const searchParams = useSearchParams()
 
-  const view = (params.get('view') as 'list' | 'grid' | null) ?? 'grid'
-  const page = Number(params.get('page') ?? 1)
+  const view = (searchParams.get('view') as 'list' | 'grid' | null) ?? 'grid'
+  const page = Number(searchParams.get('page') ?? 1)
 
   const totalItems = data?.length ?? 0
   const totalPages = Math.ceil(totalItems / itemsPerPage)
@@ -187,11 +187,11 @@ export const DataLayout = <T,>({
 
   useEffect(() => {
     if (data !== undefined && totalPages > 0 && (page < 1 || page > totalPages)) {
-      const urlParams = new URLSearchParams(params.toString())
+      const urlParams = new URLSearchParams(searchParams.toString())
       urlParams.set('page', '1')
       router.replace(`?${urlParams.toString()}`)
     }
-  }, [page, totalPages, router, params, data])
+  }, [page, totalPages, router, searchParams, data])
 
   const renderContent = () => {
     if (data === undefined) {

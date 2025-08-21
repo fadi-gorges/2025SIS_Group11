@@ -20,8 +20,9 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils/cn'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery } from 'convex/react'
+import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
 import { Check, ChevronsUpDown } from 'lucide-react'
+import { useParams } from 'next/navigation'
 import { useRouter } from 'nextjs-toploader/app'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -37,14 +38,18 @@ import {
 
 type AssessmentFormSheetProps = {
   button: React.ReactNode
+  preloadedSubjects?: Preloaded<typeof api.subjects.getSubjectsByUser>
 }
 
-export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
+export const AssessmentFormSheet = ({ button, preloadedSubjects }: AssessmentFormSheetProps) => {
+  const params = useParams()
+  const router = useRouter()
+
+  const createAssessment = useMutation(api.assessments.createAssessment)
+  const subjects = usePreloadedQuery(preloadedSubjects as Preloaded<typeof api.subjects.getSubjectsByUser>)
+
   const [open, setOpen] = useState(false)
   const [subjectOpen, setSubjectOpen] = useState(false)
-  const router = useRouter()
-  const createAssessment = useMutation(api.assessments.createAssessment)
-  const subjects = useQuery(api.subjects.getSubjectsByUser, { archived: 'unarchived' })
 
   const form = useForm<CreateAssessmentData>({
     resolver: zodResolver(createAssessmentSchema as any),
@@ -55,7 +60,7 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
       weight: 0,
       description: '',
       dueDate: undefined,
-      subjectId: '',
+      subjectId: (params.subjectId as Id<'subjects'>) ?? undefined,
     },
   })
 
@@ -90,61 +95,63 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-x-hidden overflow-y-auto p-4">
             {/* Subject Selection */}
-            <FormField
-              control={form.control}
-              name="subjectId"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Subject *</FormLabel>
-                  <Popover open={subjectOpen} onOpenChange={setSubjectOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={subjectOpen}
-                          className={cn('w-full justify-between truncate', !field.value && 'text-muted-foreground')}
-                        >
-                          {field.value
-                            ? subjects?.find((subject) => subject._id === field.value)?.name
-                            : 'Select subject...'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full max-w-sm p-0">
-                      <Command>
-                        <CommandInput placeholder="Search subjects..." />
-                        <CommandList>
-                          <CommandEmpty>No subject found.</CommandEmpty>
-                          <CommandGroup>
-                            {subjects?.map((subject) => (
-                              <CommandItem
-                                value={subject.name}
-                                key={subject._id}
-                                onSelect={() => {
-                                  field.onChange(subject._id)
-                                  setSubjectOpen(false)
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    'mr-2 size-4',
-                                    subject._id === field.value ? 'opacity-100' : 'opacity-0',
-                                  )}
-                                />
-                                <span className="truncate">{subject.name}</span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!params.subjectId && (
+              <FormField
+                control={form.control}
+                name="subjectId"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Subject *</FormLabel>
+                    <Popover open={subjectOpen} onOpenChange={setSubjectOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={subjectOpen}
+                            className={cn('w-full justify-between truncate', !field.value && 'text-muted-foreground')}
+                          >
+                            {field.value
+                              ? subjects?.find((subject) => subject._id === field.value)?.name
+                              : 'Select subject...'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full max-w-sm p-0">
+                        <Command>
+                          <CommandInput placeholder="Search subjects..." />
+                          <CommandList>
+                            <CommandEmpty>No subject found.</CommandEmpty>
+                            <CommandGroup>
+                              {subjects?.map((subject) => (
+                                <CommandItem
+                                  value={subject.name}
+                                  key={subject._id}
+                                  onSelect={() => {
+                                    field.onChange(subject._id)
+                                    setSubjectOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 size-4',
+                                      subject._id === field.value ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                  />
+                                  <span className="truncate">{subject.name}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Name */}
             <FormField

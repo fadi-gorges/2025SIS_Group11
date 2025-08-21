@@ -4,14 +4,38 @@ import SubjectList from '@/app/(authenticated)/subjects/_components/subject-list
 import TopBar from '@/components/extensions/top-bar'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import { Button } from '@/components/ui/button'
+import { convexAuthNextjsToken } from '@convex-dev/auth/nextjs/server'
+import { preloadQuery } from 'convex/nextjs'
 import { PlusIcon } from 'lucide-react'
+import { api } from '../../../../convex/_generated/api'
+import { Id } from '../../../../convex/_generated/dataModel'
 
-const SubjectListPage = async () => {
+const SubjectListPage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) => {
+  const { search, archived: _archived, term } = await searchParams
+  const archived = _archived ?? 'unarchived'
+  const hasFilter = !!search || !!term || _archived !== 'unarchived'
+
+  const token = await convexAuthNextjsToken()
+  const preloadedTerms = await preloadQuery(api.subjects.getUniqueTerms, {}, { token })
+  const preloadedSubjects = await preloadQuery(
+    api.subjects.getSubjectsByUser,
+    {
+      search: search as Id<'subjects'>,
+      archived: archived === 'all' ? undefined : archived === 'archived',
+      term: term as string,
+    },
+    { token },
+  )
+
   return (
-    <SidebarPage breadcrumb={[{ title: 'Subjects', href: '/subjects' }]}>
+    <SidebarPage breadcrumb={[{ title: 'Subjects' }]}>
       <div className="flex flex-1 flex-col gap-4">
         <TopBar searchName="subjects">
-          <SubjectFilterSheet />
+          <SubjectFilterSheet preloadedTerms={preloadedTerms} />
           <SubjectFormSheet
             button={
               <Button size="sm">
@@ -20,7 +44,7 @@ const SubjectListPage = async () => {
             }
           />
         </TopBar>
-        <SubjectList />
+        <SubjectList preloadedSubjects={preloadedSubjects} hasFilter={hasFilter} />
       </div>
     </SidebarPage>
   )

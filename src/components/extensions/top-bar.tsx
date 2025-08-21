@@ -13,10 +13,10 @@ type TopBarProps = {
 }
 
 export const TopBar = ({ children, searchName }: TopBarProps) => {
-  const params = useSearchParams()
+  const searchParams = useSearchParams()
 
-  const view = (params.get('view') as 'list' | 'grid' | null) ?? 'grid'
-  const search = params.get('search') ?? ''
+  const view = (searchParams.get('view') as 'list' | 'grid' | null) ?? 'grid'
+  const search = searchParams.get('search') ?? undefined
 
   const setParam = useSetSearchParam()
   const onSearchChange = useDebouncedSearch((value: string) => setParam('search', value || undefined), 300)
@@ -32,9 +32,9 @@ export const TopBar = ({ children, searchName }: TopBarProps) => {
         />
         <BookOpenIcon className="text-muted-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
       </div>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-3">
         {children}
-        <div className="ml-2 inline-flex rounded-md border">
+        <div className="inline-flex rounded-md border">
           <Button
             variant={view === 'grid' ? 'secondary' : 'ghost'}
             size="icon"

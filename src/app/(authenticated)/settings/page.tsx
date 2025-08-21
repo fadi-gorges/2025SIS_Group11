@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const SettingsPage = async () => {
   return (
-    <SidebarPage breadcrumb={[{ title: 'Settings', href: '/settings' }]}>
+    <SidebarPage breadcrumb={[{ title: 'Settings' }]}>
       <div className="space-y-6">
         <Heading title="Settings" description="Manage your account and preferences." />
         <Tabs defaultValue="profile" className="space-y-6">

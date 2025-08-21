@@ -1,7 +1,8 @@
 'use client'
 
+import AssessmentList from '@/app/(authenticated)/assessments/_components/assessment-list'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ import {
   UserIcon,
   XIcon,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -31,13 +33,14 @@ import { subjectSchema, VALIDATION_LIMITS } from '../../../../../convex/validati
 import SubjectActionsMenu from '../_components/subject-actions-menu'
 
 type SubjectDetailProps = {
-  preloadedDetail: Preloaded<typeof api.subjects.getSubjectDetail>
+  preloadedSubject: Preloaded<typeof api.subjects.getSubjectById>
+  preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
 }
 
-const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
+const SubjectDetail = ({ preloadedSubject, preloadedAssessments }: SubjectDetailProps) => {
   const router = useRouter()
-  const detail = usePreloadedQuery(preloadedDetail)
-  const subject = detail?.subject
+  const subject = usePreloadedQuery(preloadedSubject)
+  const assessments = usePreloadedQuery(preloadedAssessments)
   const updateSubject = useMutation(api.subjects.updateSubject)
   const [isEditing, setIsEditing] = useState(false)
 
@@ -54,10 +57,10 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
   })
 
   useEffect(() => {
-    if (!detail) {
+    if (!subject) {
       router.push('/subjects')
     }
-  }, [detail, router])
+  }, [subject, router])
 
   useEffect(() => {
     if (!isEditing && subject) {
@@ -314,7 +317,7 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
               </div>
               <Progress value={Math.max(0, Math.min(100, subject.totalGrade ?? 0))} className="h-3" />
               <p className="text-muted-foreground text-xs">
-                Based on {detail.assessments.length} assessment{detail.assessments.length !== 1 ? 's' : ''}
+                Based on {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
               </p>
             </div>
           </Card>
@@ -327,9 +330,9 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
                 <FileTextIcon className="h-5 w-5" />
               </div>
               <div className="space-y-2">
-                <div className="text-2xl font-bold">{detail.assessments.length}</div>
+                <div className="text-2xl font-bold">{assessments.length}</div>
                 <div className="text-muted-foreground text-xs">
-                  {detail.assessments.filter((a) => a.complete).length} complete
+                  {assessments.filter((a) => a.complete).length} complete
                 </div>
               </div>
             </div>
@@ -337,44 +340,19 @@ const SubjectDetail = ({ preloadedDetail }: SubjectDetailProps) => {
         </div>
 
         {/* Assessments Overview */}
-        {detail.assessments.length > 0 && (
+        {!!assessments.length && (
           <Card className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Assessments</h3>
-                <Button variant="outline" size="sm">
+                <Link
+                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  href={`/assessments?subject=${subject._id}`}
+                >
                   View All
-                </Button>
+                </Link>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {detail.assessments.slice(0, 6).map((assessment) => (
-                  <div
-                    key={assessment._id}
-                    className="hover:bg-muted/50 space-y-3 rounded-lg border p-4 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{assessment.icon}</span>
-                          <h4 className="truncate text-sm font-medium">{assessment.name}</h4>
-                        </div>
-                        <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                          <Badge variant={assessment.complete ? 'default' : 'secondary'} className="px-2 py-0 text-xs">
-                            {assessment.complete ? 'Complete' : 'Pending'}
-                          </Badge>
-                          <span>{assessment.weight}% weight</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {assessment.dueDate && (
-                      <div className="text-muted-foreground text-xs">
-                        Due: {new Date(assessment.dueDate).toLocaleDateString()}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <AssessmentList preloadedAssessments={preloadedAssessments} hasFilter={false} />
             </div>
           </Card>
         )}

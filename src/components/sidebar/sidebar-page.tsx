@@ -16,12 +16,12 @@ type SidebarPageProps = {
   children: React.ReactNode
   breadcrumb?: {
     title: string
-    href: string
+    href?: string
   }[]
 }
 
-const BreadcrumbSegment = ({ item, last }: { item: { title: string; href: string }; last: boolean }) => {
-  return !last ? (
+const BreadcrumbSegment = ({ item }: { item: { title: string; href?: string } }) => {
+  return item.href ? (
     <>
       <BreadcrumbItem className="hidden md:block">
         <BreadcrumbLink asChild>
@@ -59,7 +59,7 @@ const SidebarPage = ({ children, breadcrumb }: SidebarPageProps) => {
               <Breadcrumb className="overflow-hidden">
                 <BreadcrumbList className="flex-nowrap">
                   {breadcrumb.map((item, index) => (
-                    <BreadcrumbSegment key={index} item={item} last={index === breadcrumb.length - 1} />
+                    <BreadcrumbSegment key={index} item={item} />
                   ))}
                 </BreadcrumbList>
               </Breadcrumb>

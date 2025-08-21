@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
-import { assessmentObject, subjectFields, subjectObject } from './schema'
+import { subjectFields, subjectObject } from './schema'
 import { subjectSchema, validateWithSchema } from './validation'
 
 /**
@@ -51,44 +51,42 @@ export const createSubject = mutation({
 export const getSubjectsByUser = query({
   args: {
     search: v.optional(v.string()),
-    archived: v.optional(v.union(v.literal('unarchived'), v.literal('archived'), v.literal('all'))),
-    term: v.optional(v.union(v.string(), v.null())),
+    archived: v.optional(v.boolean()),
+    term: v.optional(v.union(v.string())),
   },
   returns: v.array(subjectObject),
   handler: async (ctx, args) => {
+    const { search, archived, term } = args
     const userId = await requireAuth(ctx)
 
-    const archivedFilter = args.archived ?? 'unarchived'
-    const hasSearch = !!args.search && args.search.trim().length > 0
-    const hasTerm = args.term !== undefined && args.term !== null && String(args.term).trim().length > 0
+    const hasSearch = !!search && search.trim().length > 0
+    const hasTerm = term !== undefined && term !== null && String(term).trim().length > 0
 
     if (hasSearch) {
       // Use search index for name search with filter constraints
       let queryBuilder = ctx.db
         .query('subjects')
-        .withSearchIndex('search_name', (q) => q.search('name', args.search!.trim()).eq('userId', userId))
+        .withSearchIndex('search_name', (q) => q.search('name', search!.trim()).eq('userId', userId))
 
-      if (archivedFilter === 'unarchived') {
-        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('archived'), false))
-      } else if (archivedFilter === 'archived') {
-        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('archived'), true))
+      if (archived !== undefined) {
+        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('archived'), archived))
       }
 
       if (hasTerm) {
-        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('term'), args.term))
+        queryBuilder = queryBuilder.filter((q) => q.eq(q.field('term'), term))
       }
 
       return await queryBuilder.collect()
     }
 
     // Non-search path uses regular indexes
-    if (archivedFilter === 'all') {
+    if (archived === undefined) {
       let q = ctx.db
         .query('subjects')
         .withIndex('by_user', (qb) => qb.eq('userId', userId))
         .order('desc')
       if (hasTerm) {
-        q = q.filter((qb) => qb.eq(qb.field('term'), args.term))
+        q = q.filter((qb) => qb.eq(qb.field('term'), term))
       }
       return await q.collect()
     }
@@ -96,7 +94,7 @@ export const getSubjectsByUser = query({
     // archived/unarchived specific
     let q = ctx.db
       .query('subjects')
-      .withIndex('by_user_and_archived', (qb) => qb.eq('userId', userId).eq('archived', archivedFilter === 'archived'))
+      .withIndex('by_user_and_archived', (qb) => qb.eq('userId', userId).eq('archived', archived))
       .order('desc')
 
     if (hasTerm) {
@@ -136,36 +134,6 @@ export const getSubjectById = query({
   handler: async (ctx, args) => {
     const { data: subject } = await requireAuthAndOwnership(ctx, args.subjectId, { allowNull: true })
     return subject
-  },
-})
-
-/**
- * Subject detail with computed total grade
- */
-export const getSubjectDetail = query({
-  args: {
-    subjectId: v.id('subjects'),
-  },
-  returns: v.union(
-    v.object({
-      subject: subjectObject,
-      assessments: v.array(assessmentObject),
-    }),
-    v.null(),
-  ),
-  handler: async (ctx, args) => {
-    const { data: subject } = await requireAuthAndOwnership(ctx, args.subjectId, { allowNull: true })
-    if (!subject) return null
-
-    const assessments = await ctx.db
-      .query('assessments')
-      .withIndex('by_subject', (q) => q.eq('subjectId', subject._id))
-      .collect()
-
-    return {
-      subject,
-      assessments,
-    }
   },
 })
 
