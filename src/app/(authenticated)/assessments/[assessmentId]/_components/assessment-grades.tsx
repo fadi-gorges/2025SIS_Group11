@@ -9,8 +9,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Preloaded, usePreloadedQuery } from 'convex/react'
 import { GraduationCapIcon, PlusIcon } from 'lucide-react'
+import { useState } from 'react'
 import { api } from '../../../../../../convex/_generated/api'
 import { GradeFormSheet } from './grade-form-sheet'
+import { GradeItem } from './grade-item'
+import { EditGradeSheet } from './edit-grade-sheet'
 
 type AssessmentGradesProps = {
   preloadedDetail: Preloaded<typeof api.assessments.getAssessmentDetail>
@@ -20,9 +23,18 @@ const AssessmentGrades = ({ preloadedDetail }: AssessmentGradesProps) => {
   const detail = usePreloadedQuery(preloadedDetail)
   const grades = detail?.grades ?? []
   const assessmentId = detail?.assessment._id
+  const [editingGrade, setEditingGrade] = useState<any>(null)
 
   if (!assessmentId) {
     return null
+  }
+
+  const handleEditGrade = (grade: any) => {
+    setEditingGrade(grade)
+  }
+
+  const handleGradeSuccess = () => {
+    setEditingGrade(null)
   }
 
   return (
@@ -36,23 +48,19 @@ const AssessmentGrades = ({ preloadedDetail }: AssessmentGradesProps) => {
             </Button>
           }
           assessmentId={assessmentId}
+          onSuccess={handleGradeSuccess}
         />
       </BorderedCardHeader>
       <BorderedCardContent className="space-y-4">
         {grades.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {grades.map((grade) => (
-              <div key={grade._id} className="hover:bg-muted/50 space-y-3 rounded-lg border p-4 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <GraduationCapIcon className="size-4 shrink-0" />
-                      <h4 className="truncate text-sm font-medium">{grade.name}</h4>
-                    </div>
-                    <div className="text-primary text-2xl font-bold">{grade.grade}%</div>
-                  </div>
-                </div>
-              </div>
+              <GradeItem
+                key={grade._id}
+                grade={grade}
+                onEdit={() => handleEditGrade(grade)}
+                onDelete={handleGradeSuccess}
+              />
             ))}
           </div>
         ) : (
@@ -63,6 +71,16 @@ const AssessmentGrades = ({ preloadedDetail }: AssessmentGradesProps) => {
           </div>
         )}
       </BorderedCardContent>
+
+      {/* Edit Grade Sheet */}
+      {editingGrade && (
+        <EditGradeSheet
+          grade={editingGrade}
+          open={!!editingGrade}
+          onOpenChange={(open) => !open && setEditingGrade(null)}
+          onSuccess={handleGradeSuccess}
+        />
+      )}
     </BorderedCard>
   )
 }

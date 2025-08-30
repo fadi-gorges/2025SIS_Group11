@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sheet'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from 'convex/react'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -30,44 +30,35 @@ const gradeFormSchema = z.object({
 
 type GradeFormData = z.infer<typeof gradeFormSchema>
 
-type GradeFormSheetProps = {
-  button: React.ReactNode
-  assessmentId: Id<'assessments'>
-  gradeToEdit?: {
+type EditGradeSheetProps = {
+  grade: {
     _id: Id<'grades'>
     name: string
     grade: number
   }
-  onSuccess?: () => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess: () => void
 }
 
-export const GradeFormSheet = ({ button, assessmentId, gradeToEdit, onSuccess }: GradeFormSheetProps) => {
-  const [open, setOpen] = useState(false)
-  const addGrade = useMutation(api.grades.addGrade)
+export const EditGradeSheet = ({ grade, open, onOpenChange, onSuccess }: EditGradeSheetProps) => {
   const updateGrade = useMutation(api.grades.updateGrade)
 
   const form = useForm<GradeFormData>({
     resolver: zodResolver(gradeFormSchema),
     defaultValues: {
-      name: gradeToEdit?.name || '',
-      grade: gradeToEdit?.grade.toString() || '',
+      name: grade.name,
+      grade: grade.grade.toString(),
     },
   })
 
-  // Reset form when gradeToEdit changes
+  // Reset form when grade changes
   useEffect(() => {
-    if (gradeToEdit) {
-      form.reset({
-        name: gradeToEdit.name,
-        grade: gradeToEdit.grade.toString(),
-      })
-    } else {
-      form.reset({
-        name: '',
-        grade: '',
-      })
-    }
-  }, [gradeToEdit, form])
+    form.reset({
+      name: grade.name,
+      grade: grade.grade.toString(),
+    })
+  }, [grade, form])
 
   const onSubmit = async (data: GradeFormData) => {
     try {
@@ -77,44 +68,28 @@ export const GradeFormSheet = ({ button, assessmentId, gradeToEdit, onSuccess }:
         return
       }
       
-      if (gradeToEdit) {
-        // Update existing grade
-        await updateGrade({
-          gradeId: gradeToEdit._id,
-          name: data.name,
-          grade: gradeNumber,
-        })
-        toast.success('Grade has been updated successfully.')
-      } else {
-        // Add new grade
-        await addGrade({
-          name: data.name,
-          grade: gradeNumber,
-          assessmentId,
-        })
-        toast.success('Grade has been added successfully.')
-      }
+      await updateGrade({
+        gradeId: grade._id,
+        name: data.name,
+        grade: gradeNumber,
+      })
       
-      form.reset()
-      setOpen(false)
-      onSuccess?.()
+      toast.success('Grade has been updated successfully.')
+      onOpenChange(false)
+      onSuccess()
     } catch (e: any) {
-      toast.error(e?.data || `Failed to ${gradeToEdit ? 'update' : 'add'} grade.`)
+      toast.error(e?.data || 'Failed to update grade.')
     }
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>{button}</SheetTrigger>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full max-w-md">
         <SheetHeader>
-          <SheetTitle>{gradeToEdit ? 'Edit Grade' : 'Add Grade'}</SheetTitle>
+          <SheetTitle>Edit Grade</SheetTitle>
           <SheetDescription>
-            {gradeToEdit ? 'Edit' : 'Add'} a grade for this assessment to track your performance. 
+            Edit the grade for this assessment. 
             <br />
-            <span className="text-muted-foreground text-sm">
-              Note: The total of all grades for this assessment cannot exceed 100%.
-            </span>
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -148,13 +123,13 @@ export const GradeFormSheet = ({ button, assessmentId, gradeToEdit, onSuccess }:
                       min={0}
                       max={100}
                       step={0.1}
-                      placeholder="85.5"
+                      placeholder="e.g., 85.5"
                       {...field}
                     />
                   </FormControl>
                   <FormMessage />
                   <p className="text-muted-foreground text-xs">
-                    Enter a value between 0 and 100. The total of all grades for this assessment cannot exceed 100%.
+                    Enter a value between 0 and 100. 
                   </p>
                 </FormItem>
               )}
@@ -164,7 +139,7 @@ export const GradeFormSheet = ({ button, assessmentId, gradeToEdit, onSuccess }:
                 <Button variant="outline">Cancel</Button>
               </SheetClose>
               <Button type="submit" loading={form.formState.isSubmitting}>
-                {gradeToEdit ? 'Update Grade' : 'Add Grade'}
+                Update Grade
               </Button>
             </SheetFooter>
           </form>
