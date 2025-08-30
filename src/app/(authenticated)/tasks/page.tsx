@@ -137,7 +137,7 @@ const TasksPage = () => {
 
   // Filter and sort tasks
   const filteredAndSortedTasks = useMemo(() => {
-    let filtered = tasks.filter(task => {
+    const filtered = tasks.filter(task => {
       const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            task.description.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesSubject = !selectedSubject || selectedSubject === "all" || task.subject === selectedSubject
