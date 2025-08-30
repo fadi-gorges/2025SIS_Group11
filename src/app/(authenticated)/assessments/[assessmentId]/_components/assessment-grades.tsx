@@ -13,7 +13,6 @@ import { useState } from 'react'
 import { api } from '../../../../../../convex/_generated/api'
 import { GradeFormSheet } from './grade-form-sheet'
 import { GradeItem } from './grade-item'
-import { EditGradeSheet } from './edit-grade-sheet'
 
 type AssessmentGradesProps = {
   preloadedDetail: Preloaded<typeof api.assessments.getAssessmentDetail>
@@ -74,10 +73,10 @@ const AssessmentGrades = ({ preloadedDetail }: AssessmentGradesProps) => {
 
       {/* Edit Grade Sheet */}
       {editingGrade && (
-        <EditGradeSheet
-          grade={editingGrade}
-          open={!!editingGrade}
-          onOpenChange={(open) => !open && setEditingGrade(null)}
+        <GradeFormSheet
+          button={<div style={{ display: 'none' }} />}
+          assessmentId={assessmentId}
+          gradeToEdit={editingGrade}
           onSuccess={handleGradeSuccess}
         />
       )}

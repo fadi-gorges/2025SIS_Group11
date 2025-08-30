@@ -69,6 +69,13 @@ export const GradeFormSheet = ({ button, assessmentId, gradeToEdit, onSuccess }:
     }
   }, [gradeToEdit, form])
 
+  // Close sheet when gradeToEdit changes (for editing mode)
+  useEffect(() => {
+    if (gradeToEdit) {
+      setOpen(true)
+    }
+  }, [gradeToEdit])
+
   const onSubmit = async (data: GradeFormData) => {
     try {
       const gradeNumber = parseFloat(data.grade)
@@ -112,9 +119,6 @@ export const GradeFormSheet = ({ button, assessmentId, gradeToEdit, onSuccess }:
           <SheetDescription>
             {gradeToEdit ? 'Edit' : 'Add'} a grade for this assessment to track your performance. 
             <br />
-            <span className="text-muted-foreground text-sm">
-              Note: The total of all grades for this assessment cannot exceed 100%.
-            </span>
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -148,13 +152,13 @@ export const GradeFormSheet = ({ button, assessmentId, gradeToEdit, onSuccess }:
                       min={0}
                       max={100}
                       step={0.1}
-                      placeholder="85.5"
+                      placeholder="e.g., 85.5"
                       {...field}
                     />
                   </FormControl>
                   <FormMessage />
                   <p className="text-muted-foreground text-xs">
-                    Enter a value between 0 and 100. The total of all grades for this assessment cannot exceed 100%.
+                    Enter a value between 0 and 100. 
                   </p>
                 </FormItem>
               )}
