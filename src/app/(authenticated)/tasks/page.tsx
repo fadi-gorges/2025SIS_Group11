@@ -439,12 +439,40 @@ const DroppableColumn = ({
   const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
-    <div
-      ref={setNodeRef}
-      className={`${className} ${isOver ? 'border-primary/50 bg-primary/5' : ''}`}
-    >
-      {children}
-    </div>
+    <>
+      <style jsx>{`
+        @keyframes warmBorder {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        .warm-drop-zone {
+          background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff, #5f27cd);
+          background-size: 400% 400%;
+          animation: warmBorder 2s ease infinite;
+          border-radius: 12px;
+          padding: 3px;
+          transition: all 0.3s ease;
+        }
+        
+        .warm-drop-zone-inner {
+          background: hsl(var(--background));
+          border-radius: 9px;
+          width: 100%;
+          height: 100%;
+          min-height: 200px;
+        }
+      `}</style>
+      <div
+        ref={setNodeRef}
+        className={`${className} ${isOver ? 'warm-drop-zone' : ''}`}
+      >
+        <div className={isOver ? 'warm-drop-zone-inner' : ''}>
+          {children}
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -497,16 +525,36 @@ const TaskCard = ({
           50% { transform: translateX(1px) translateY(1px); }
           75% { transform: translateX(-1px) translateY(1px); }
         }
+        
+        @keyframes warmBorder {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        .warm-border {
+          background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff, #5f27cd);
+          background-size: 400% 400%;
+          animation: warmBorder 3s ease infinite;
+          border-radius: 8px;
+          padding: 2px;
+        }
+        
+        .warm-border-inner {
+          background: hsl(var(--background));
+          border-radius: 6px;
+          width: 100%;
+          height: 100%;
+        }
       `}</style>
-      <Card 
-        ref={setNodeRef}
-        style={style}
-        className={`group cursor-grab active:cursor-grabbing ${
-          isDragging ? 'opacity-50' : ''
-        }`}
-        {...attributes}
-        {...listeners}
-      >
+      <div className={`warm-border ${isDragging ? 'opacity-50' : ''}`}>
+        <Card 
+          ref={setNodeRef}
+          style={style}
+          className="group cursor-grab active:cursor-grabbing warm-border-inner"
+          {...attributes}
+          {...listeners}
+        >
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -559,6 +607,7 @@ const TaskCard = ({
         </div>
       </CardContent>
     </Card>
+      </div>
     </>
   )
 }
