@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Preloaded, usePreloadedQuery } from 'convex/react'
 import { GraduationCapIcon, PlusIcon } from 'lucide-react'
 import { api } from '../../../../../../convex/_generated/api'
+import { GradeFormSheet } from './grade-form-sheet'
 
 type AssessmentGradesProps = {
   preloadedDetail: Preloaded<typeof api.assessments.getAssessmentDetail>
@@ -18,14 +19,24 @@ type AssessmentGradesProps = {
 const AssessmentGrades = ({ preloadedDetail }: AssessmentGradesProps) => {
   const detail = usePreloadedQuery(preloadedDetail)
   const grades = detail?.grades ?? []
+  const assessmentId = detail?.assessment._id
+
+  if (!assessmentId) {
+    return null
+  }
 
   return (
     <BorderedCard>
       <BorderedCardHeader className="justify-between">
         <BorderedCardTitle>Grades</BorderedCardTitle>
-        <Button variant="outline" size="sm">
-          <PlusIcon className="size-4" /> Add Grade
-        </Button>
+        <GradeFormSheet
+          button={
+            <Button variant="outline" size="sm">
+              <PlusIcon className="size-4" /> Add Grade
+            </Button>
+          }
+          assessmentId={assessmentId}
+        />
       </BorderedCardHeader>
       <BorderedCardContent className="space-y-4">
         {grades.length > 0 ? (

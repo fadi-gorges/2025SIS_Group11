@@ -6,6 +6,38 @@ import { gradeFields, gradeObject } from './schema'
 import { gradeSchema, validateWithSchema } from './validation'
 
 /**
+ * Helper function to calculate and update subject total grade
+ */
+async function updateSubjectTotalGrade(ctx: any, subjectId: string) {
+  const allAssessments = await ctx.db
+    .query('assessments')
+    .withIndex('by_subject', (q: any) => q.eq('subjectId', subjectId))
+    .collect()
+
+  let totalWeightedGrade = 0
+  let totalWeight = 0
+
+  for (const assmt of allAssessments) {
+    const assessmentGrades = await ctx.db
+      .query('grades')
+      .withIndex('by_assessment', (q: any) => q.eq('assessmentId', assmt._id))
+      .collect()
+
+    if (assessmentGrades.length > 0) {
+      // Calculate average grade for this assessment
+      const avgGrade = assessmentGrades.reduce((sum: number, g: any) => sum + g.grade, 0) / assessmentGrades.length
+      totalWeightedGrade += avgGrade * assmt.weight
+      totalWeight += assmt.weight
+    }
+  }
+
+  // Calculate final weighted average
+  const finalGrade = totalWeight > 0 ? totalWeightedGrade / totalWeight : 0
+
+  await ctx.db.patch(subjectId, { totalGrade: finalGrade })
+}
+
+/**
  * Add a grade to an assessment
  */
 export const addGrade = mutation({
@@ -38,10 +70,8 @@ export const addGrade = mutation({
       assessmentId: args.assessmentId,
     })
 
-    // Update subject total grade
-    await ctx.db.patch(assessment.subjectId, {
-      totalGrade: existingGrades.reduce((sum, g) => sum + g.grade, 0) + validation.data.grade,
-    })
+    // Update subject total grade using helper function
+    await updateSubjectTotalGrade(ctx, assessment.subjectId)
 
     return gradeId
   },
@@ -62,7 +92,6 @@ export const getGradesByAssessment = query({
     return await ctx.db
       .query('grades')
       .withIndex('by_assessment', (q) => q.eq('assessmentId', args.assessmentId))
-      .order('desc')
       .collect()
   },
 })
@@ -103,20 +132,7 @@ export const updateGrade = mutation({
 
     // Update subject total grade if grade value was changed
     if (validation.data.grade !== undefined) {
-      const allGrades = await ctx.db
-        .query('grades')
-        .withIndex('by_assessment', (q) => q.eq('assessmentId', gradeRecord.assessmentId))
-        .collect()
-
-      // Find the updated grade in the collection and use its new value
-      const totalGrade = allGrades.reduce((sum, g) => {
-        if (g._id === args.gradeId) {
-          return sum + validation.data.grade!
-        }
-        return sum + g.grade
-      }, 0)
-
-      await ctx.db.patch(gradeRecord.subjectId, { totalGrade })
+      await updateSubjectTotalGrade(ctx, gradeRecord.subjectId)
     }
   },
 })
@@ -135,13 +151,6 @@ export const deleteGrade = mutation({
     await ctx.db.delete(args.gradeId)
 
     // Update subject total grade after deletion
-    const remainingGrades = await ctx.db
-      .query('grades')
-      .withIndex('by_assessment', (q) => q.eq('assessmentId', gradeRecord.assessmentId))
-      .collect()
-
-    const totalGrade = remainingGrades.reduce((sum, g) => sum + g.grade, 0)
-
-    await ctx.db.patch(gradeRecord.subjectId, { totalGrade })
+    await updateSubjectTotalGrade(ctx, gradeRecord.subjectId)
   },
 })
