@@ -25,7 +25,7 @@ import { Id } from '../../../../../../convex/_generated/dataModel'
 // Grade form schema
 const gradeFormSchema = z.object({
   name: z.string().min(1, 'Grade name is required').max(75, 'Grade name must be no more than 75 characters'),
-  grade: z.coerce.number().min(0, 'Grade must be at least 0').max(100, 'Grade must be no more than 100'),
+  grade: z.string().min(1, 'Grade is required'),
 })
 
 type GradeFormData = z.infer<typeof gradeFormSchema>
@@ -43,15 +43,21 @@ export const GradeFormSheet = ({ button, assessmentId }: GradeFormSheetProps) =>
     resolver: zodResolver(gradeFormSchema),
     defaultValues: {
       name: '',
-      grade: 0,
+      grade: '',
     },
   })
 
   const onSubmit = async (data: GradeFormData) => {
     try {
+      const gradeNumber = parseFloat(data.grade)
+      if (isNaN(gradeNumber) || gradeNumber < 0 || gradeNumber > 100) {
+        toast.error('Grade must be a valid number between 0 and 100.')
+        return
+      }
+      
       await addGrade({
         name: data.name,
-        grade: data.grade,
+        grade: gradeNumber,
         assessmentId,
       })
       toast.success('Grade has been added successfully.')
@@ -68,7 +74,13 @@ export const GradeFormSheet = ({ button, assessmentId }: GradeFormSheetProps) =>
       <SheetContent side="right" className="w-full max-w-md">
         <SheetHeader>
           <SheetTitle>Add Grade</SheetTitle>
-          <SheetDescription>Add a grade for this assessment to track your performance.</SheetDescription>
+          <SheetDescription>
+            Add a grade for this assessment to track your performance. 
+            <br />
+            <span className="text-muted-foreground text-sm">
+              Note: The total of all grades for this assessment cannot exceed 100%.
+            </span>
+          </SheetDescription>
         </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto p-4">
@@ -106,6 +118,9 @@ export const GradeFormSheet = ({ button, assessmentId }: GradeFormSheetProps) =>
                     />
                   </FormControl>
                   <FormMessage />
+                  <p className="text-muted-foreground text-xs">
+                    Enter a value between 0 and 100. The total of all grades for this assessment cannot exceed 100%.
+                  </p>
                 </FormItem>
               )}
             />

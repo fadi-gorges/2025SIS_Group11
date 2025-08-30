@@ -63,6 +63,16 @@ export const addGrade = mutation({
       .withIndex('by_assessment', (q) => q.eq('assessmentId', args.assessmentId))
       .collect()
 
+    // Check if adding this grade would exceed 100%
+    const totalExistingGrade = existingGrades.reduce((sum, g) => sum + g.grade, 0)
+    const newTotalGrade = totalExistingGrade + validation.data.grade
+    
+    if (newTotalGrade > 100) {
+      throw new ConvexError(
+        `Adding this grade would exceed 100%. Current total: ${totalExistingGrade}%, new grade: ${validation.data.grade}%. Maximum allowed: ${100 - totalExistingGrade}%`
+      )
+    }
+
     const gradeId = await ctx.db.insert('grades', {
       ...validation.data,
       userId,
@@ -125,6 +135,26 @@ export const updateGrade = mutation({
 
       if (existingGrade) {
         throw new ConvexError('A grade with this name already exists for this assessment')
+      }
+    }
+
+    // Check if updating the grade would exceed 100%
+    if (validation.data.grade !== undefined) {
+      const allGrades = await ctx.db
+        .query('grades')
+        .withIndex('by_assessment', (q) => q.eq('assessmentId', gradeRecord.assessmentId))
+        .collect()
+
+      const totalWithoutCurrentGrade = allGrades
+        .filter((g) => g._id !== args.gradeId)
+        .reduce((sum, g) => sum + g.grade, 0)
+      
+      const newTotalGrade = totalWithoutCurrentGrade + validation.data.grade
+      
+      if (newTotalGrade > 100) {
+        throw new ConvexError(
+          `Updating this grade would exceed 100%. Current total without this grade: ${totalWithoutCurrentGrade}%, new grade: ${validation.data.grade}%. Maximum allowed: ${100 - totalWithoutCurrentGrade}%`
+        )
       }
     }
 
