@@ -397,7 +397,7 @@ const TasksPage = () => {
             ))}
           </div>
 
-          <DragOverlay dropAnimation={null}>
+          <DragOverlay dropAnimation={null} style={{ boxShadow: 'none' }}>
             {activeTask ? (
               <TaskCard
                 task={activeTask}
@@ -470,6 +470,9 @@ const TaskCard = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
+    ...(isDragging && {
+      animation: 'shake 0.1s infinite',
+    }),
   }
   const getPriorityColor = (priority: TaskPriority) => {
     switch (priority) {
@@ -486,15 +489,24 @@ const TaskCard = ({
   }
 
   return (
-    <Card 
-      ref={setNodeRef}
-      style={style}
-      className={`group cursor-grab active:cursor-grabbing ${
-        isDragging ? 'opacity-50' : ''
-      }`}
-      {...attributes}
-      {...listeners}
-    >
+    <>
+      <style jsx>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0px) translateY(0px); }
+          25% { transform: translateX(-1px) translateY(-1px); }
+          50% { transform: translateX(1px) translateY(1px); }
+          75% { transform: translateX(-1px) translateY(1px); }
+        }
+      `}</style>
+      <Card 
+        ref={setNodeRef}
+        style={style}
+        className={`group cursor-grab active:cursor-grabbing ${
+          isDragging ? 'opacity-50' : ''
+        }`}
+        {...attributes}
+        {...listeners}
+      >
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -547,6 +559,7 @@ const TaskCard = ({
         </div>
       </CardContent>
     </Card>
+    </>
   )
 }
 
