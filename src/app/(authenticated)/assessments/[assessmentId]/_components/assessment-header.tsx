@@ -1,52 +1,33 @@
 'use client'
 
 import DateTimeInput from '@/components/datetime/date-time-input'
-import {
-  BorderedCard,
-  BorderedCardContent,
-  BorderedCardHeader,
-  BorderedCardTitle,
-} from '@/components/page/bordered-card'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDate } from '@/lib/utils/format-date'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
-import {
-  BookIcon,
-  CalendarIcon,
-  CheckIcon,
-  GraduationCapIcon,
-  PlusIcon,
-  ScaleIcon,
-  TargetIcon,
-  UserIcon,
-  UsersIcon,
-  XIcon,
-} from 'lucide-react'
+import { BookIcon, CalendarIcon, CheckIcon, ScaleIcon, UserIcon, UsersIcon, XIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { api } from '../../../../../convex/_generated/api'
-import { assessmentSchema, VALIDATION_LIMITS } from '../../../../../convex/validation'
-import AssessmentActionsMenu from '../_components/assessment-actions-menu'
-import AssessmentDueBadge from '../_components/assessment-due-badge'
+import { api } from '../../../../../../convex/_generated/api'
+import { assessmentSchema, VALIDATION_LIMITS } from '../../../../../../convex/validation'
+import AssessmentActionsMenu from '../../_components/assessment-actions-menu'
+import AssessmentDueBadge from '../../_components/assessment-due-badge'
 
-type AssessmentDetailProps = {
+type AssessmentHeaderProps = {
   preloadedDetail: Preloaded<typeof api.assessments.getAssessmentDetail>
 }
 
-const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
-  const router = useRouter()
+const AssessmentHeader = ({ preloadedDetail }: AssessmentHeaderProps) => {
   const detail = usePreloadedQuery(preloadedDetail)
   const assessment = detail?.assessment
+  const subject = detail?.subject
   const updateAssessment = useMutation(api.assessments.updateAssessment)
   const [isEditing, setIsEditing] = useState(false)
 
@@ -63,12 +44,6 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
   })
 
   useEffect(() => {
-    if (!detail) {
-      router.push('/assessments')
-    }
-  }, [detail, router])
-
-  useEffect(() => {
     if (!isEditing && assessment) {
       form.reset({
         name: assessment.name ?? '',
@@ -81,7 +56,7 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
     }
   }, [assessment, isEditing, form])
 
-  if (!assessment) {
+  if (!assessment || !subject) {
     return null
   }
 
@@ -103,12 +78,9 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
     }
   }
 
-  const averageGrade =
-    detail.grades.length > 0 ? detail.grades.reduce((sum, grade) => sum + grade.grade, 0) / detail.grades.length : 0
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
         {/* Header Section */}
         <div className="border-b pb-6">
           <div className="space-y-3">
@@ -169,12 +141,12 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
             {/* Subject Link */}
             <div className="flex items-center gap-2">
               <Link
-                href={`/subjects/${detail.subject._id}`}
+                href={`/subjects/${subject._id}`}
                 className="text-muted-foreground hover:text-foreground flex items-center gap-2 overflow-hidden text-sm transition-colors"
               >
                 <BookIcon className="size-4 shrink-0" />
-                <span className="truncate">{detail.subject.name}</span>
-                {detail.subject.code && <span className="truncate">({detail.subject.code})</span>}
+                <span className="truncate">{subject.name}</span>
+                {subject.code && <span className="truncate">({subject.code})</span>}
               </Link>
             </div>
 
@@ -297,75 +269,9 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
             </div>
           </div>
         </div>
-
-        {/* Progress & Overview Cards */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Grade Overview Card */}
-          <BorderedCard>
-            <BorderedCardHeader className="justify-between">
-              <BorderedCardTitle>Grade Overview</BorderedCardTitle>
-              <span className="text-primary text-2xl font-bold">{Math.round(averageGrade)}%</span>
-            </BorderedCardHeader>
-            <BorderedCardContent className="space-y-4">
-              <Progress value={Math.max(0, Math.min(100, averageGrade))} className="h-3" />
-              <p className="text-muted-foreground text-xs">
-                Average from {detail.grades.length} grade{detail.grades.length !== 1 ? 's' : ''}
-              </p>
-            </BorderedCardContent>
-          </BorderedCard>
-
-          {/* Weight Card */}
-          <BorderedCard>
-            <BorderedCardHeader className="justify-between">
-              <BorderedCardTitle>Weight</BorderedCardTitle>
-              <TargetIcon className="h-5 w-5" />
-            </BorderedCardHeader>
-            <BorderedCardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">{assessment.weight}%</div>
-                <div className="text-muted-foreground text-xs">of total subject grade</div>
-              </div>
-            </BorderedCardContent>
-          </BorderedCard>
-        </div>
-
-        {/* Grades Section */}
-        <BorderedCard>
-          <BorderedCardHeader className="justify-between">
-            <BorderedCardTitle>Grades</BorderedCardTitle>
-            <Button variant="outline" size="sm">
-              <PlusIcon className="size-4" /> Add Grade
-            </Button>
-          </BorderedCardHeader>
-          <BorderedCardContent className="space-y-4">
-            {detail.grades.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {detail.grades.map((grade) => (
-                  <div key={grade._id} className="hover:bg-muted/50 space-y-3 rounded-lg border p-4 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <GraduationCapIcon className="size-4 shrink-0" />
-                          <h4 className="truncate text-sm font-medium">{grade.name}</h4>
-                        </div>
-                        <div className="text-primary text-2xl font-bold">{grade.grade}%</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-8 text-center">
-                <GraduationCapIcon className="text-muted-foreground mx-auto h-12 w-12" />
-                <h3 className="mt-4 text-lg font-semibold">No grades yet</h3>
-                <p className="text-muted-foreground mt-2">Add grades to track your performance on this assessment.</p>
-              </div>
-            )}
-          </BorderedCardContent>
-        </BorderedCard>
       </form>
     </Form>
   )
 }
 
-export default AssessmentDetail
+export default AssessmentHeader
