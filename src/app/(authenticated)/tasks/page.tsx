@@ -1,5 +1,27 @@
 'use client'
 
+/**
+ * Tasks Page - Kanban Board with Drag & Drop Functionality
+ * 
+ * Features:
+ * - Four-column Kanban board: Over Due, To Do, In Progress, Done
+ * - Drag and drop tasks between columns using @dnd-kit
+ * - Shaky vibration effect when dragging (removed shadow effects for cleaner UI)
+ * - Visual feedback: drop zones highlight with blue border when dragging over
+ * - Search, filter by subject, and sort by due date
+ * - Create/Edit task form with dd/mm/yyyy date format
+ * - Responsive design for all screen sizes
+ * 
+ * Drag & Drop Implementation:
+ * - Uses @dnd-kit/core for drag and drop functionality
+ * - TaskCard uses useDraggable hook for individual task dragging
+ * - DroppableColumn wraps each column with useDroppable for drop zones
+ * - DragOverlay shows floating dragged item with dropAnimation={null}
+ * - Custom shake animation (0.1s infinite) provides vibration feedback
+ * - No shadow effects - clean, modern appearance
+ * - Tasks can be moved between any columns without limitations
+ */
+
 import { useState, useMemo, useEffect } from 'react'
 import Heading from '@/components/page/heading'
 import SidebarPage from '@/components/sidebar/sidebar-page'
