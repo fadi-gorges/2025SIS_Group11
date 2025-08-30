@@ -397,7 +397,7 @@ const TasksPage = () => {
             ))}
           </div>
 
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeTask ? (
               <TaskCard
                 task={activeTask}
@@ -489,7 +489,7 @@ const TaskCard = ({
     <Card 
       ref={setNodeRef}
       style={style}
-      className={`group hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing ${
+      className={`group cursor-grab active:cursor-grabbing ${
         isDragging ? 'opacity-50' : ''
       }`}
       {...attributes}
