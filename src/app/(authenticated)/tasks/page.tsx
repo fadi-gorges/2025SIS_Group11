@@ -40,8 +40,7 @@ const mockTasks = [
     subject: 'CS101',
     status: 'todo' as const,
     priority: 'high' as const,
-    dueDate: new Date('2024-01-15'),
-    weight: 15
+    dueDate: new Date('2024-01-15')
   },
   {
     id: '2',
@@ -50,8 +49,7 @@ const mockTasks = [
     subject: 'CS201',
     status: 'in_progress' as const,
     priority: 'medium' as const,
-    dueDate: new Date('2024-01-10'),
-    weight: 25
+    dueDate: new Date('2024-01-10')
   },
   {
     id: '3',
@@ -60,8 +58,7 @@ const mockTasks = [
     subject: 'CS301',
     status: 'done' as const,
     priority: 'low' as const,
-    dueDate: new Date('2024-01-05'),
-    weight: 20
+    dueDate: new Date('2024-01-05')
   },
   {
     id: '4',
@@ -70,8 +67,7 @@ const mockTasks = [
     subject: 'CS401',
     status: 'todo' as const,
     priority: 'high' as const,
-    dueDate: new Date('2024-01-08'),
-    weight: 30
+    dueDate: new Date('2024-01-08')
   },
   {
     id: '5',
@@ -80,8 +76,7 @@ const mockTasks = [
     subject: 'CS501',
     status: 'in_progress' as const,
     priority: 'medium' as const,
-    dueDate: new Date('2024-01-20'),
-    weight: 10
+    dueDate: new Date('2024-01-20')
   }
 ]
 
@@ -104,7 +99,6 @@ interface Task {
   status: TaskStatus
   priority: TaskPriority
   dueDate: Date
-  weight: number
 }
 
 const TasksPage = () => {
@@ -439,40 +433,12 @@ const DroppableColumn = ({
   const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
-    <>
-      <style jsx>{`
-        @keyframes warmBorder {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        
-        .warm-drop-zone {
-          background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff, #5f27cd);
-          background-size: 400% 400%;
-          animation: warmBorder 2s ease infinite;
-          border-radius: 12px;
-          padding: 3px;
-          transition: all 0.3s ease;
-        }
-        
-        .warm-drop-zone-inner {
-          background: hsl(var(--background));
-          border-radius: 9px;
-          width: 100%;
-          height: 100%;
-          min-height: 200px;
-        }
-      `}</style>
-      <div
-        ref={setNodeRef}
-        className={`${className} ${isOver ? 'warm-drop-zone' : ''}`}
-      >
-        <div className={isOver ? 'warm-drop-zone-inner' : ''}>
-          {children}
-        </div>
-      </div>
-    </>
+    <div
+      ref={setNodeRef}
+      className={`${className} ${isOver ? 'border-primary/50 bg-primary/5' : ''}`}
+    >
+      {children}
+    </div>
   )
 }
 
@@ -525,36 +491,16 @@ const TaskCard = ({
           50% { transform: translateX(1px) translateY(1px); }
           75% { transform: translateX(-1px) translateY(1px); }
         }
-        
-        @keyframes warmBorder {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        
-        .warm-border {
-          background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff, #5f27cd);
-          background-size: 400% 400%;
-          animation: warmBorder 3s ease infinite;
-          border-radius: 8px;
-          padding: 2px;
-        }
-        
-        .warm-border-inner {
-          background: hsl(var(--background));
-          border-radius: 6px;
-          width: 100%;
-          height: 100%;
-        }
       `}</style>
-      <div className={`warm-border ${isDragging ? 'opacity-50' : ''}`}>
-        <Card 
-          ref={setNodeRef}
-          style={style}
-          className="group cursor-grab active:cursor-grabbing warm-border-inner"
-          {...attributes}
-          {...listeners}
-        >
+      <Card 
+        ref={setNodeRef}
+        style={style}
+        className={`group cursor-grab active:cursor-grabbing ${
+          isDragging ? 'opacity-50' : ''
+        }`}
+        {...attributes}
+        {...listeners}
+      >
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -568,11 +514,6 @@ const TaskCard = ({
                 <Badge variant="outline" className="text-xs">
                   {task.subject}
                 </Badge>
-                {task.weight && (
-                  <Badge variant="secondary" className="text-xs">
-                    {task.weight}%
-                  </Badge>
-                )}
               </div>
               
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -607,7 +548,6 @@ const TaskCard = ({
         </div>
       </CardContent>
     </Card>
-      </div>
     </>
   )
 }
@@ -630,8 +570,7 @@ const TaskFormSheet = ({
     subject: task?.subject || '',
     status: task?.status || 'todo' as TaskStatus,
     priority: task?.priority || 'medium' as TaskPriority,
-    dueDate: task?.dueDate || new Date(),
-    weight: task?.weight || 0
+    dueDate: task?.dueDate || new Date()
   })
 
   // Prevent hydration mismatch by ensuring consistent date handling
@@ -808,20 +747,7 @@ const TaskFormSheet = ({
               )}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Weight (%)</label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={formData.weight || ''}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setFormData({ ...formData, weight: value === '' ? 0 : parseInt(value) || 0 })
-                }}
-                placeholder="0"
-              />
-            </div>
+
           </div>
         </form>
 
