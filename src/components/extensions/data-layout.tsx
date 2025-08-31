@@ -94,12 +94,12 @@ const ListItem = ({ href, className, children, actions }: ItemProps) => {
   const content = (
     <div
       className={cn(
-        'hover:bg-muted/75 bg-card flex h-20 items-center gap-3 px-4 transition-colors',
+        'hover:bg-muted/75 bg-card flex h-20 flex-col justify-center gap-2 px-4 transition-colors',
         actions && 'pr-14',
         className,
       )}
     >
-      <div className="min-w-0 flex-1">{children}</div>
+      {children}
     </div>
   )
 

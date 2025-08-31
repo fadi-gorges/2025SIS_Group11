@@ -30,6 +30,7 @@ const AssessmentListPage = async ({
     },
     { token },
   )
+  const preloadedGrades = await preloadQuery(api.grades.getGradesByUser, {}, { token })
 
   return (
     <SidebarPage breadcrumb={[{ title: 'Assessments' }]}>
@@ -42,12 +43,12 @@ const AssessmentListPage = async ({
                 <PlusIcon className="size-4" /> Add
               </Button>
             }
-            preloadedSubjects={preloadedSubjects}
           />
         </TopBar>
         <AssessmentList
           preloadedAssessments={preloadedAssessments}
           preloadedSubjects={preloadedSubjects}
+          preloadedGrades={preloadedGrades}
           hasFilter={hasFilter}
         />
       </div>

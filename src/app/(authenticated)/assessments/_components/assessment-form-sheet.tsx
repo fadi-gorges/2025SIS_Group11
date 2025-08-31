@@ -20,7 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils/cn'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useRouter } from 'nextjs-toploader/app'
@@ -38,15 +38,14 @@ import {
 
 type AssessmentFormSheetProps = {
   button: React.ReactNode
-  preloadedSubjects?: Preloaded<typeof api.subjects.getSubjectsByUser>
 }
 
-export const AssessmentFormSheet = ({ button, preloadedSubjects }: AssessmentFormSheetProps) => {
+export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
   const params = useParams()
   const router = useRouter()
 
   const createAssessment = useMutation(api.assessments.createAssessment)
-  const subjects = usePreloadedQuery(preloadedSubjects as Preloaded<typeof api.subjects.getSubjectsByUser>)
+  const subjects = useQuery(api.subjects.getSubjectsByUser, {})
 
   const [open, setOpen] = useState(false)
   const [subjectOpen, setSubjectOpen] = useState(false)

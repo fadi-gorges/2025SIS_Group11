@@ -168,11 +168,11 @@ export const gradeValueSchema = z
 export const gradeNameSchema = z
   .string()
   .trim()
-  .min(1, 'Grade name is required')
   .max(
     VALIDATION_LIMITS.GRADE_NAME_MAX_LENGTH,
     `Grade name must be no more than ${VALIDATION_LIMITS.GRADE_NAME_MAX_LENGTH} characters`,
   )
+  .optional()
 
 /**
  * Task validation schema
@@ -325,6 +325,35 @@ export function validateWeight(
     return {
       isValid: false,
       error: `Total weight would exceed ${VALIDATION_LIMITS.ASSESSMENT_WEIGHT_MAX}%. Current total: ${totalExistingWeight}%`,
+    }
+  }
+
+  return { isValid: true }
+}
+
+/**
+ * Validate grade total doesn't exceed assessment weight
+ */
+export function validateGradeTotal(
+  newGrade: number,
+  existingGrades: number[] = [],
+  assessmentWeight: number,
+  excludeCurrentGrade: boolean = false,
+): { isValid: boolean; error?: string } {
+  // First validate the grade itself
+  const gradeResult = validateWithSchema(gradeValueSchema, newGrade)
+  if (!gradeResult.isValid) {
+    return gradeResult
+  }
+
+  // Calculate total of existing grades
+  const totalExistingGrades = existingGrades.reduce((sum, g) => sum + g, 0)
+  const newTotal = excludeCurrentGrade ? totalExistingGrades : totalExistingGrades + newGrade
+
+  if (newTotal > assessmentWeight) {
+    return {
+      isValid: false,
+      error: `Total grade cannot exceed the assessment weight of ${assessmentWeight}%.`,
     }
   }
 

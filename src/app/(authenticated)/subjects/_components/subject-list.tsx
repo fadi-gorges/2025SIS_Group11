@@ -4,7 +4,9 @@ import SubjectFormSheet from '@/app/(authenticated)/subjects/_components/subject
 import { DataLayout, GridItem, ListItem } from '@/components/extensions/data-layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
+import { getTotalGrade } from '@/lib/utils/get-total-grade'
 import { Preloaded, usePreloadedQuery } from 'convex/react'
 import { BookIcon, BookOpenIcon, CalendarIcon, HashIcon, PlusIcon } from 'lucide-react'
 import { api } from '../../../../../convex/_generated/api'
@@ -12,14 +14,20 @@ import { SubjectActionsMenu } from './subject-actions-menu'
 
 export const SubjectList = ({
   preloadedSubjects,
+  preloadedGrades,
   hasFilter,
 }: {
   preloadedSubjects: Preloaded<typeof api.subjects.getSubjectsByUser>
+  preloadedGrades: Preloaded<typeof api.grades.getGradesByUser>
   hasFilter: boolean
 }) => {
   const subjects = usePreloadedQuery(preloadedSubjects)
+  const grades = usePreloadedQuery(preloadedGrades)
 
   const renderGridItem = (s: any) => {
+    const subjectGrades = grades.filter((grade) => grade.subjectId === s._id)
+    const totalGrade = getTotalGrade(subjectGrades)
+
     return (
       <GridItem key={s._id} href={`/subjects/${s._id}`} actions={<SubjectActionsMenu subject={s} />}>
         <div className="min-w-0 flex-1 space-y-3">
@@ -43,6 +51,10 @@ export const SubjectList = ({
                 </div>
               )}
             </div>
+            <div className="flex items-center gap-3">
+              <Progress value={totalGrade} className="h-2 flex-1" />
+              <span className="text-primary shrink-0 text-sm">{totalGrade}%</span>
+            </div>
             {s.archived && <Badge variant="secondary">Archived</Badge>}
           </div>
         </div>
@@ -51,8 +63,11 @@ export const SubjectList = ({
   }
 
   const renderListItem = (s: any) => {
+    const subjectGrades = grades.filter((grade) => grade.subjectId === s._id)
+    const totalGrade = getTotalGrade(subjectGrades)
+
     return (
-      <ListItem key={s._id} href={`/subjects/${s._id}`} actions={<SubjectActionsMenu subject={s} />}>
+      <ListItem key={s._id} href={`/subjects/${s._id}`} actions={<SubjectActionsMenu subject={s} />} className="h-28">
         <div className="flex items-center gap-3">
           <BookIcon className="size-5 shrink-0" />
           <div className="min-w-0 flex-1 space-y-1">
@@ -75,6 +90,10 @@ export const SubjectList = ({
               )}
             </div>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Progress value={totalGrade} className="h-2 flex-1" />
+          <span className="text-primary shrink-0 text-sm">{totalGrade}%</span>
         </div>
       </ListItem>
     )

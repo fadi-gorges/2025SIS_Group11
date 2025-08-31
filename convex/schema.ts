@@ -33,7 +33,6 @@ export const subjectFields = {
   coordinatorName: v.optional(v.string()),
   coordinatorEmail: v.optional(v.string()),
   archived: v.boolean(),
-  totalGrade: v.optional(v.number()),
   userId: v.id('users'),
 } as const
 
@@ -57,7 +56,7 @@ export const assessmentFields = {
  * Assessment grade field definitions
  */
 export const gradeFields = {
-  name: v.string(),
+  name: v.optional(v.string()),
   grade: v.number(),
   userId: v.id('users'),
   subjectId: v.id('subjects'),

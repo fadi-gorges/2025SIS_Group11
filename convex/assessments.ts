@@ -58,43 +58,41 @@ export const getAssessmentsByUser = query({
   args: {
     search: v.optional(v.string()),
     complete: v.optional(assessmentFields.complete),
-    subjectId: v.optional(v.union(v.id('subjects'), v.null())),
+    subjectId: v.optional(v.id('subjects')),
   },
   returns: v.array(assessmentObject),
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx)
 
     const hasSearch = !!args.search && args.search.trim().length > 0
-    const hasSubjectFilter = args.subjectId !== undefined && args.subjectId !== null
+    const hasSubjectFilter = !!args.subjectId
 
-    let results: any[]
+    let results
     const complete = args.complete
     if (complete === undefined) {
-      results = await ctx.db
+      results = ctx.db
         .query('assessments')
         .withIndex('by_user', (q) => q.eq('userId', userId))
         .order('desc')
-        .collect()
     } else {
-      results = await ctx.db
+      results = ctx.db
         .query('assessments')
         .withIndex('by_user_and_complete', (q) => q.eq('userId', userId).eq('complete', complete))
         .order('desc')
-        .collect()
     }
 
     // Apply search filter (case-insensitive name search)
     if (hasSearch) {
       const searchTerm = args.search!.toLowerCase().trim()
-      results = results.filter((assessment) => assessment.name.toLowerCase().includes(searchTerm))
+      results = results.filter((q) => q.eq(q.field('name'), searchTerm))
     }
 
     // Apply subject filter
     if (hasSubjectFilter) {
-      results = results.filter((assessment) => assessment.subjectId === args.subjectId)
+      results = results.filter((q) => q.eq(q.field('subjectId'), args.subjectId))
     }
 
-    return results
+    return await results.collect()
   },
 })
 
@@ -103,7 +101,7 @@ export const getAssessmentsByUser = query({
  */
 export const getAssessmentsBySubject = query({
   args: {
-    subjectId: assessmentFields.subjectId,
+    subjectId: v.id('subjects'),
     complete: v.optional(assessmentFields.complete),
   },
   returns: v.array(assessmentObject),

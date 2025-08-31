@@ -4,6 +4,7 @@ import { DataLayout, GridItem, ListItem } from '@/components/extensions/data-lay
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { formatDate } from '@/lib/utils/format-date'
+import { getTotalGrade } from '@/lib/utils/get-total-grade'
 import { Preloaded, usePreloadedQuery } from 'convex/react'
 import { CalendarIcon, FileTextIcon, PlusIcon, ScaleIcon } from 'lucide-react'
 import { api } from '../../../../../convex/_generated/api'
@@ -14,20 +15,25 @@ import AssessmentFormSheet from './assessment-form-sheet'
 
 export const AssessmentList = ({
   preloadedAssessments,
+  preloadedGrades,
   hasFilter,
   preloadedSubjects,
   view,
   itemsPerPage,
 }: {
   preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
+  preloadedGrades: Preloaded<typeof api.grades.getGradesByUser>
   hasFilter: boolean
   preloadedSubjects?: Preloaded<typeof api.subjects.getSubjectsByUser>
   view?: 'grid' | 'list'
   itemsPerPage?: number
 }) => {
   const assessments = usePreloadedQuery(preloadedAssessments)
+  const grades = usePreloadedQuery(preloadedGrades)
 
   const renderGridItem = (assessment: Doc<'assessments'>) => {
+    const assessmentGrades = grades.filter((grade) => grade.assessmentId === assessment._id)
+    const totalGrade = getTotalGrade(assessmentGrades)
     const dueDate = assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'N/A'
     return (
       <GridItem
@@ -45,7 +51,10 @@ export const AssessmentList = ({
             <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
               <div className="flex items-center gap-1 overflow-hidden">
                 <ScaleIcon className="size-4 shrink-0" />
-                <p className="truncate">{assessment.weight}%</p>
+                <p className="truncate">
+                  {!!totalGrade && `${totalGrade}/`}
+                  {assessment.weight}%
+                </p>
               </div>
               <div className="flex items-center gap-1 overflow-hidden">
                 <CalendarIcon className="size-4 shrink-0" />
@@ -102,7 +111,6 @@ export const AssessmentList = ({
         icon: FileTextIcon,
         button: (
           <AssessmentFormSheet
-            preloadedSubjects={preloadedSubjects}
             button={
               <Button size="sm">
                 <PlusIcon className="size-4" /> Add Assessment

@@ -30,6 +30,7 @@ const SubjectListPage = async ({
     },
     { token },
   )
+  const preloadedGrades = await preloadQuery(api.grades.getGradesByUser, {}, { token })
 
   return (
     <SidebarPage breadcrumb={[{ title: 'Subjects' }]}>
@@ -44,7 +45,7 @@ const SubjectListPage = async ({
             }
           />
         </TopBar>
-        <SubjectList preloadedSubjects={preloadedSubjects} hasFilter={hasFilter} />
+        <SubjectList preloadedSubjects={preloadedSubjects} preloadedGrades={preloadedGrades} hasFilter={hasFilter} />
       </div>
     </SidebarPage>
   )
