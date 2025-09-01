@@ -9,7 +9,7 @@ import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'nextjs-toploader/app'
 import * as React from 'react'
 import { useEffect } from 'react'
-import FullPagination from './full-pagination'
+import FullPagination from '../originui/full-pagination'
 
 /**
  * A reusable data layout component that handles grid/list views, empty states,
