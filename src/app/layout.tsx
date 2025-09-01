@@ -70,7 +70,7 @@ export default function RootLayout({
   return (
     <ConvexAuthNextjsServerProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={`${geistSans.variable} ${geistMono.variable} relative flex min-h-svh flex-col antialiased`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} relative flex min-h-svh flex-col antialiased`} suppressHydrationWarning>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <ConvexClientProvider>{children}</ConvexClientProvider>
             <Toaster richColors closeButton className="mb-safe-offset-12 md:mb-0" />
