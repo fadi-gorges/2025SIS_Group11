@@ -70,15 +70,11 @@ export const getAssessmentsByUser = query({
     let results
     const complete = args.complete
     if (complete === undefined) {
-      results = ctx.db
-        .query('assessments')
-        .withIndex('by_user', (q) => q.eq('userId', userId))
-        .order('desc')
+      results = ctx.db.query('assessments').withIndex('by_user', (q) => q.eq('userId', userId))
     } else {
       results = ctx.db
         .query('assessments')
         .withIndex('by_user_and_complete', (q) => q.eq('userId', userId).eq('complete', complete))
-        .order('desc')
     }
 
     // Apply search filter (case-insensitive name search)
@@ -92,7 +88,25 @@ export const getAssessmentsByUser = query({
       results = results.filter((q) => q.eq(q.field('subjectId'), args.subjectId))
     }
 
-    return await results.collect()
+    const assessments = await results.collect()
+
+    // Sort by due date first (most recent first, nulls last), then by name
+    return assessments.sort((a, b) => {
+      if (a.dueDate && b.dueDate) {
+        const dateComparison = a.dueDate - b.dueDate
+        if (dateComparison !== 0) {
+          return dateComparison
+        }
+        return a.name.localeCompare(b.name)
+      }
+      if (a.dueDate && !b.dueDate) {
+        return -1
+      }
+      if (!a.dueDate && b.dueDate) {
+        return 1
+      }
+      return a.name.localeCompare(b.name)
+    })
   },
 })
 
@@ -109,20 +123,42 @@ export const getAssessmentsBySubject = query({
     // Check if subject belongs to authenticated user
     await requireAuthAndOwnership(ctx, args.subjectId)
 
+    let assessments
     const complete = args.complete
     if (complete === undefined) {
-      return await ctx.db
+      assessments = await ctx.db
         .query('assessments')
         .withIndex('by_subject', (q) => q.eq('subjectId', args.subjectId))
-        .order('desc')
         .collect()
     } else {
-      return await ctx.db
+      assessments = await ctx.db
         .query('assessments')
         .withIndex('by_subject_and_complete', (q) => q.eq('subjectId', args.subjectId).eq('complete', complete))
-        .order('desc')
         .collect()
     }
+
+    // Sort by due date first (most recent first, nulls last), then by name
+    return assessments.sort((a, b) => {
+      // If both have due dates, sort by due date (most recent first)
+      if (a.dueDate && b.dueDate) {
+        const dateComparison = b.dueDate - a.dueDate
+        if (dateComparison !== 0) {
+          return dateComparison
+        }
+        // If due dates are the same, sort by name
+        return a.name.localeCompare(b.name)
+      }
+      // If only a has due date, a comes first
+      if (a.dueDate && !b.dueDate) {
+        return -1
+      }
+      // If only b has due date, b comes first
+      if (!a.dueDate && b.dueDate) {
+        return 1
+      }
+      // If neither has due date, sort by name
+      return a.name.localeCompare(b.name)
+    })
   },
 })
 

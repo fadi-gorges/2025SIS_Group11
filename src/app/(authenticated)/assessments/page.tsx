@@ -47,7 +47,6 @@ const AssessmentListPage = async ({
         </TopBar>
         <AssessmentList
           preloadedAssessments={preloadedAssessments}
-          preloadedSubjects={preloadedSubjects}
           preloadedGrades={preloadedGrades}
           hasFilter={hasFilter}
         />

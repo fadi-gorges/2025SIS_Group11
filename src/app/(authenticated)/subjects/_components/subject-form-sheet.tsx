@@ -1,8 +1,11 @@
 'use client'
 
+import FileUpload from '@/components/originui/file-upload'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
   SheetClose,
@@ -14,14 +17,17 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
+import { type FileWithPreview } from '@/hooks/use-file-upload'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation } from 'convex/react'
+import { useAction, useMutation } from 'convex/react'
+import { FileTextIcon, LoaderIcon, UploadIcon } from 'lucide-react'
 import { useRouter } from 'nextjs-toploader/app'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { api } from '../../../../../convex/_generated/api'
+import { Id } from '../../../../../convex/_generated/dataModel'
 import { subjectSchema, VALIDATION_LIMITS } from '../../../../../convex/validation'
 
 type SubjectFormSheetProps = {
@@ -30,8 +36,15 @@ type SubjectFormSheetProps = {
 
 export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
   const [open, setOpen] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [processingStage, setProcessingStage] = useState<string>('')
+  const [uploadedFile, setUploadedFile] = useState<FileWithPreview>()
   const router = useRouter()
   const createSubject = useMutation(api.subjects.createSubject)
+  const createSubjectWithAssessments = useMutation(api.subjects.createSubjectWithAssessments)
+  const parseSubject = useAction(api.parseSubject.parseSubject)
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+  const deleteFile = useMutation(api.files.deleteFile)
 
   const form = useForm<z.infer<typeof subjectSchema>>({
     resolver: zodResolver(subjectSchema as any),
@@ -45,8 +58,78 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
     },
   })
 
+  // Process PDF and automatically create subject and assessments
+  const processPDF = async () => {
+    if (!uploadedFile || !(uploadedFile.file instanceof File)) return
+
+    let storageId: Id<'_storage'> | null = null
+
+    try {
+      setIsProcessing(true)
+      setProcessingStage('Uploading PDF...')
+
+      // Upload file to Convex
+      const uploadUrl = await generateUploadUrl()
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': uploadedFile.file.type },
+        body: uploadedFile.file,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload file')
+      }
+
+      const result = await response.json()
+      storageId = result.storageId as Id<'_storage'>
+      setProcessingStage('Extracting information...')
+
+      // Parse the PDF content
+      if (!storageId) {
+        throw new Error('Failed to get storage ID')
+      }
+      const parsed = await parseSubject({ fileId: storageId })
+      setProcessingStage('Creating subject and assessments...')
+
+      const assessments = parsed.assessments.map((assessment) => ({
+        ...assessment,
+        dueDate: assessment.dueDate ? new Date(assessment.dueDate).getTime() : undefined,
+      }))
+
+      // Automatically create subject with assessments
+      const createResult = await createSubjectWithAssessments({
+        subject: {
+          name: parsed.subject.name,
+          code: parsed.subject.code || undefined,
+          description: parsed.subject.description || undefined,
+          term: parsed.subject.term || undefined,
+          coordinatorName: parsed.subject.coordinatorName || undefined,
+          coordinatorEmail: parsed.subject.coordinatorEmail || undefined,
+        },
+        assessments,
+      })
+
+      // Clean up and redirect
+      setProcessingStage('Cleaning up...')
+      await deleteFile({ fileId: storageId })
+      form.reset()
+      setUploadedFile(undefined)
+      setOpen(false)
+      toast.success(`Subject and assessments have been created successfully.`)
+      router.push(`/subjects/${createResult.subjectId}`)
+    } catch (e: any) {
+      toast.error(e?.data || 'Failed to process PDF. Please try again or fill in manually.')
+      setIsProcessing(false)
+      setProcessingStage('')
+      if (storageId) {
+        await deleteFile({ fileId: storageId })
+      }
+    }
+  }
+
   const onSubmit = async (data: z.infer<typeof subjectSchema>) => {
     try {
+      // Create subject only (manual entry)
       const id = await createSubject({
         name: data.name,
         code: data.code || undefined,
@@ -57,6 +140,7 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
       })
       toast.success('Subject has been created.')
       form.reset()
+      setUploadedFile(undefined)
       setOpen(false)
       router.push(`/subjects/${id}`)
     } catch (e: any) {
@@ -64,8 +148,19 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
     }
   }
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen)
+    if (!newOpen) {
+      // Reset state when closing
+      form.reset()
+      setUploadedFile(undefined)
+      setIsProcessing(false)
+      setProcessingStage('')
+    }
+  }
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>{button}</SheetTrigger>
       <SheetContent side="right" className="w-full max-w-md">
         <SheetHeader>
@@ -74,6 +169,47 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
         </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto p-4">
+            {/* PDF Upload Section */}
+            <div className="space-y-4">
+              <div>
+                <Label>Upload Subject Outline (PDF)</Label>
+                <p className="text-muted-foreground text-sm">
+                  Upload a PDF to automatically create subject and assessments
+                </p>
+              </div>
+
+              <FileUpload
+                title="Upload PDF"
+                icon={<FileTextIcon className="size-4 opacity-60" />}
+                maxSize={2 * 1024 * 1024} // 2MB
+                accept=".pdf,application/pdf"
+                multiple={false}
+                disabled={isProcessing}
+                onFilesChange={(files) => setUploadedFile(files[0])}
+                fileActions={(file) =>
+                  !isProcessing && (
+                    <Button type="button" size="sm" variant="outline" onClick={processPDF} disabled={isProcessing}>
+                      <UploadIcon className="mr-1 size-3" />
+                      Create Subject
+                    </Button>
+                  )
+                }
+              />
+
+              {/* Processing status */}
+              {isProcessing && uploadedFile && (
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                  <LoaderIcon className="size-4 animate-spin" />
+                  <span>{processingStage}</span>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Manual Entry Fields */}
+            <div className="text-muted-foreground text-sm">Create a subject manually:</div>
+
             <FormField
               control={form.control}
               name="name"

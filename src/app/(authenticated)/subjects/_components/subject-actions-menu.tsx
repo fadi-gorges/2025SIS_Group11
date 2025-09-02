@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useMutation } from 'convex/react'
 import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { useParams } from 'next/navigation'
+import { useRouter } from 'nextjs-toploader/app'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
@@ -29,6 +31,9 @@ type SubjectActionsMenuProps = React.ComponentProps<typeof Button> & {
 }
 
 export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps) => {
+  const params = useParams()
+  const router = useRouter()
+
   const toggleArchive = useMutation(api.subjects.toggleSubjectArchive)
   const deleteSubject = useMutation(api.subjects.deleteSubject)
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
@@ -41,7 +46,6 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
       setIsArchiving(true)
       await toggleArchive({ subjectId: subject._id })
       toast.success(subject.archived ? 'Subject has been unarchived.' : 'Subject has been archived.')
-      setIsArchiveOpen(false)
     } catch {
       toast.error('Failed to update archive state')
     } finally {
@@ -54,7 +58,6 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
       setIsDeleting(true)
       await deleteSubject({ subjectId: subject._id })
       toast.success('Subject has been deleted.')
-      setIsDeleteOpen(false)
     } catch {
       toast.error('Failed to delete subject.')
     } finally {

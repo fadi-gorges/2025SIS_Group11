@@ -19,7 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
 import { CalendarIcon, CheckIcon, FileTextIcon, HashIcon, MailIcon, UserIcon, XIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'nextjs-toploader/app'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -364,6 +364,7 @@ const SubjectDetail = ({ preloadedSubject, preloadedAssessments, preloadedGrades
               hasFilter={false}
               view="grid"
               itemsPerPage={3}
+              showSubject={false}
             />
           </BorderedCardContent>
         </BorderedCard>

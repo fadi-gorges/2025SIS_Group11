@@ -20,7 +20,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
 import { BookIcon, CalendarIcon, CheckIcon, ScaleIcon, TargetIcon, UserIcon, UsersIcon, XIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'nextjs-toploader/app'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -276,7 +276,7 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
                           <FormControl>
                             <Textarea
                               {...field}
-                              maxLength={VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH}
+                              maxLength={VALIDATION_LIMITS.ASSESSMENT_DESCRIPTION_MAX_LENGTH}
                               rows={4}
                               className="text-muted-foreground resize-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                               placeholder="Add a description for this assessment..."

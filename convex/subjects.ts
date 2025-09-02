@@ -1,8 +1,8 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
-import { subjectFields, subjectObject } from './schema'
-import { subjectSchema, validateWithSchema } from './validation'
+import { assessmentFields, subjectFields, subjectObject } from './schema'
+import { assessmentSchema, subjectSchema, validateWithSchema } from './validation'
 
 /**
  * Create a new subject
@@ -228,5 +228,95 @@ export const toggleSubjectArchive = mutation({
     await ctx.db.patch(args.subjectId, {
       archived: !subject.archived,
     })
+  },
+})
+
+/**
+ * Create a subject with multiple assessments in a single transaction-like operation
+ */
+export const createSubjectWithAssessments = mutation({
+  args: {
+    subject: v.object({
+      name: subjectFields.name,
+      code: subjectFields.code,
+      description: subjectFields.description,
+      term: subjectFields.term,
+      coordinatorName: subjectFields.coordinatorName,
+      coordinatorEmail: subjectFields.coordinatorEmail,
+    }),
+    assessments: v.array(
+      v.object({
+        name: assessmentFields.name,
+        icon: assessmentFields.icon,
+        contribution: assessmentFields.contribution,
+        weight: assessmentFields.weight,
+        description: assessmentFields.description,
+        dueDate: assessmentFields.dueDate,
+      }),
+    ),
+  },
+  returns: v.object({
+    subjectId: v.id('subjects'),
+    assessmentIds: v.array(v.id('assessments')),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
+    // Validate subject data
+    const subjectValidation = validateWithSchema(subjectSchema, args.subject)
+    if (!subjectValidation.isValid) {
+      throw new ConvexError(`Subject validation failed: ${subjectValidation.error}`)
+    }
+
+    // Validate each assessment
+    const validatedAssessments = []
+    for (const assessment of args.assessments) {
+      const assessmentValidation = validateWithSchema(assessmentSchema, assessment)
+      if (!assessmentValidation.isValid) {
+        throw new ConvexError(`Assessment validation failed: ${assessmentValidation.error}`)
+      }
+      validatedAssessments.push(assessmentValidation.data)
+    }
+
+    // Validate total assessment weight equals 100%
+    const totalWeight = validatedAssessments.reduce((sum, assessment) => sum + assessment.weight, 0)
+    if (Math.abs(totalWeight - 100) > 0.01) {
+      throw new ConvexError(`Total assessment weight is ${totalWeight}%, but must equal 100%`)
+    }
+
+    // Check for duplicate subject name
+    const existingSubject = await ctx.db
+      .query('subjects')
+      .withIndex('by_user_and_name', (q) => q.eq('userId', userId).eq('name', args.subject.name))
+      .first()
+
+    if (existingSubject) {
+      throw new ConvexError('A subject with this name already exists')
+    }
+
+    // Create the subject
+    const subjectId = await ctx.db.insert('subjects', {
+      ...subjectValidation.data,
+      archived: false,
+      userId: userId,
+    })
+
+    // Create all assessments
+    const assessmentIds = []
+    for (const assessment of validatedAssessments) {
+      const assessmentId = await ctx.db.insert('assessments', {
+        ...assessment,
+        complete: false,
+        showCheckAlert: true,
+        userId: userId,
+        subjectId: subjectId,
+      })
+      assessmentIds.push(assessmentId)
+    }
+
+    return {
+      subjectId,
+      assessmentIds,
+    }
   },
 })
