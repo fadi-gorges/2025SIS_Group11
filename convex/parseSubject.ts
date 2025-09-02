@@ -36,7 +36,7 @@ const extractionSchema = z.object({
         .string()
         .optional()
         .describe(
-          'The due date and time as an ISO string, if specified in the document, e.g. "2025-01-01T00:00:00.000". The time should default to the end of the day (11:59:59.000) if only the date is specified.',
+          'The due date and time as an ISO string (e.g. "2025-01-01T00:00:00.000") only if EXACTLY SPECIFIED in the document. If the date is not EXACTLY SPECIFIED, return an empty string. The time should default to the end of the day (11:59:59.000) if only the date is specified.',
         ),
       contribution: z.enum(['individual', 'group']).describe('Whether this is an individual or group assessment'),
       icon: z
