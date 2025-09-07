@@ -78,13 +78,15 @@ const getAutoTaskStatus = (task: Task): TaskStatus => {
   const now = new Date()
   const isOverdue = task.dueDate < now
   
-  // If no subtasks, keep current status
+  // If no subtasks, allow manual status changes
   if (!task.subtasks || task.subtasks.length === 0) {
     return task.status
   }
   
   const completedSubtasks = task.subtasks.filter(subtask => subtask.done).length
   const totalSubtasks = task.subtasks.length
+  
+  // ENFORCE AUTOMATIC STATUS BASED ON SUBTASK COMPLETION:
   
   // All subtasks completed -> done (regardless of overdue status)
   if (completedSubtasks === totalSubtasks) {
@@ -281,7 +283,7 @@ const mockTasks = [
 ]
 
 // Global mock data that persists changes
-let persistentMockTasks = [...mockTasks]
+let persistentMockTasks: Task[] = [...mockTasks]
 
 const mockSubjects = [
   { code: 'CS101', name: 'Introduction to Computer Science' },
@@ -561,11 +563,38 @@ const TasksPage = () => {
     const newStatus = statusMap[targetStatus]
     if (!newStatus) return
 
-    // Don't allow dropping on the same status
     const task = tasks.find(t => t.id === taskId)
-    if (!task || task.status === newStatus) return
+    if (!task) return
 
-    // Update task status
+    // Don't allow dropping on the same status
+    if (task.status === newStatus) return
+
+    // DRAG RESTRICTIONS: Check if the drag operation is allowed based on subtask completion
+    if (task.subtasks && task.subtasks.length > 0) {
+      const completedSubtasks = task.subtasks.filter(subtask => subtask.done).length
+      const totalSubtasks = task.subtasks.length
+      
+      // Define allowed statuses based on completion
+      let allowedStatuses: TaskStatus[] = []
+      
+      if (completedSubtasks === 0) {
+        // 0/number done -> Can only go to "To Do" or "Over Due"
+        allowedStatuses = ['todo']
+      } else if (completedSubtasks === totalSubtasks) {
+        // number/number done -> Can only go to "Done"
+        allowedStatuses = ['done']
+      } else {
+        // 1/number done -> Can only go to "In Progress"
+        allowedStatuses = ['in_progress']
+      }
+      
+      // Check if the target status is allowed
+      if (!allowedStatuses.includes(newStatus)) {
+        return // Prevent the drag operation
+      }
+    }
+
+    // If drag is allowed, update the task status
     setTasks(tasks.map(t => 
       t.id === taskId ? { ...t, status: newStatus } : t
     ))
@@ -578,7 +607,7 @@ const TasksPage = () => {
 
     const taskId = active.id as string
     const targetStatus = over.id as string
-
+    
     // Map column IDs to task statuses
     const statusMap: Record<string, TaskStatus> = {
       'overdue': 'todo',
@@ -590,14 +619,29 @@ const TasksPage = () => {
     const newStatus = statusMap[targetStatus]
     if (!newStatus) return
 
-    // Don't allow dropping on the same status
     const task = tasks.find(t => t.id === taskId)
-    if (!task || task.status === newStatus) return
+    if (!task) return
 
-    // Update task status immediately for better UX
-    setTasks(tasks.map(t => 
-      t.id === taskId ? { ...t, status: newStatus } : t
-    ))
+    // Check drag restrictions and provide visual feedback
+    if (task.subtasks && task.subtasks.length > 0) {
+      const completedSubtasks = task.subtasks.filter(subtask => subtask.done).length
+      const totalSubtasks = task.subtasks.length
+      
+      let allowedStatuses: TaskStatus[] = []
+      
+      if (completedSubtasks === 0) {
+        allowedStatuses = ['todo']
+      } else if (completedSubtasks === totalSubtasks) {
+        allowedStatuses = ['done']
+      } else {
+        allowedStatuses = ['in_progress']
+      }
+      
+      // If not allowed, prevent the drop
+      if (!allowedStatuses.includes(newStatus)) {
+        return
+      }
+    }
   }
 
   if (!isClient) {
