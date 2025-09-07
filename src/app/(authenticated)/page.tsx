@@ -1,3 +1,4 @@
+"use client"
 import Heading from '@/components/page/heading'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -10,6 +11,8 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Star, TrendingUp } from 'lucide-react'
 import { useMemo } from 'react'
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 
 // Mock data shaped according to convex/schema.ts entities
 const mockSubjects = [
@@ -123,6 +126,8 @@ const PriorityBadge = ({ priority }: { priority: 'none' | 'low' | 'medium' | 'hi
 }
 
 const DashboardPage = () => {
+  const subjects = useQuery(api.subjects.getSubjectsByUser, { archived: false })
+  const activeSubjectsCount = subjects?.length ?? 0
   const subjectMap = useMemo(() => byId(mockSubjects), [])
 
   const upcoming = useMemo(
@@ -169,7 +174,7 @@ const DashboardPage = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Active Subjects"
-            value={mockSubjects.length}
+            value={activeSubjectsCount}
             icon={<BookOpen className="text-muted-foreground h-4 w-4" />}
           />
           <StatCard
