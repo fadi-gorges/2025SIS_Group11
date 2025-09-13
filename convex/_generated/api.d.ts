@@ -21,8 +21,10 @@ import type * as grades from "../grades.js";
 import type * as http from "../http.js";
 import type * as parseSubject from "../parseSubject.js";
 import type * as subjects from "../subjects.js";
+import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
 import type * as validation from "../validation.js";
+import type * as weeks from "../weeks.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -41,8 +43,10 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   parseSubject: typeof parseSubject;
   subjects: typeof subjects;
+  tasks: typeof tasks;
   users: typeof users;
   validation: typeof validation;
+  weeks: typeof weeks;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

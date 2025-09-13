@@ -2,7 +2,7 @@
 
 import {
   BookOpenIcon,
-  ClipboardListIcon,
+  FileTextIcon,
   KanbanSquareIcon,
   LayoutDashboardIcon,
   NotebookPenIcon,
@@ -32,7 +32,7 @@ const data = {
     {
       title: 'Assessments',
       url: '/assessments',
-      icon: ClipboardListIcon,
+      icon: FileTextIcon,
     },
     {
       title: 'Timeline',

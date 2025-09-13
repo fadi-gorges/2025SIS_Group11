@@ -1,7 +1,7 @@
 import { authTables } from '@convex-dev/auth/server'
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
-import { assessmentIcons } from './validation'
+import { assessmentIcons, taskPriority, taskStatus, taskType } from './validation'
 
 // =============================================================================
 // REUSABLE FIELD OBJECTS
@@ -64,6 +64,35 @@ export const gradeFields = {
 } as const
 
 /**
+ * Week field definitions
+ */
+export const weekFields = {
+  name: v.string(),
+  startDate: v.number(),
+  endDate: v.number(),
+  isHoliday: v.boolean(),
+  duration: v.optional(v.number()), // in weeks, for holidays
+  userId: v.id('users'),
+} as const
+
+/**
+ * Task field definitions
+ */
+export const taskFields = {
+  name: v.string(),
+  type: v.union(...taskType.map((type) => v.literal(type))),
+  description: v.optional(v.string()),
+  weekId: v.id('weeks'),
+  dueDate: v.optional(v.number()),
+  status: v.union(...taskStatus.map((status) => v.literal(status))),
+  priority: v.union(...taskPriority.map((priority) => v.literal(priority))),
+  reminderTime: v.optional(v.number()),
+  userId: v.id('users'),
+  subjectId: v.optional(v.id('subjects')),
+  assessmentId: v.optional(v.id('assessments')),
+} as const
+
+/**
  * Complete object schemas with system fields for use in Convex functions
  */
 export const userObject = v.object({
@@ -88,6 +117,18 @@ export const gradeObject = v.object({
   _id: v.id('grades'),
   _creationTime: v.number(),
   ...gradeFields,
+})
+
+export const weekObject = v.object({
+  _id: v.id('weeks'),
+  _creationTime: v.number(),
+  ...weekFields,
+})
+
+export const taskObject = v.object({
+  _id: v.id('tasks'),
+  _creationTime: v.number(),
+  ...taskFields,
 })
 
 // =============================================================================
@@ -125,4 +166,21 @@ export default defineSchema({
     .index('by_assessment', ['assessmentId'])
     .index('by_subject', ['subjectId'])
     .index('by_user', ['userId']),
+
+  // Timeline weeks and holidays - represents time periods for organizing tasks
+  weeks: defineTable(weekFields)
+    .index('by_user', ['userId'])
+    .index('by_user_and_start_date', ['userId', 'startDate'])
+    .index('by_start_date', ['startDate']),
+
+  // Tasks - represents work items that can be assigned to weeks
+  tasks: defineTable(taskFields)
+    .index('by_user', ['userId'])
+    .index('by_week', ['weekId'])
+    .index('by_user_and_week', ['userId', 'weekId'])
+    .index('by_user_and_status', ['userId', 'status'])
+    .index('by_subject', ['subjectId'])
+    .index('by_assessment', ['assessmentId'])
+    .index('by_due_date', ['dueDate'])
+    .searchIndex('search_name', { searchField: 'name', filterFields: ['userId'] }),
 })
