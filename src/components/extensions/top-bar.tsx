@@ -3,8 +3,9 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSetSearchParam } from '@/hooks/use-set-search-param'
+import { useViewStorage } from '@/hooks/use-view-storage'
 import { useDebouncedSearch } from '@/lib/utils'
-import { BookOpenIcon, GridIcon, ListIcon } from 'lucide-react'
+import { GridIcon, ListIcon, SearchIcon } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
 type TopBarProps = {
@@ -14,8 +15,8 @@ type TopBarProps = {
 
 export const TopBar = ({ children, searchName }: TopBarProps) => {
   const searchParams = useSearchParams()
+  const { view, setView } = useViewStorage()
 
-  const view = (searchParams.get('view') as 'list' | 'grid' | null) ?? 'grid'
   const search = searchParams.get('search') ?? undefined
 
   const setParam = useSetSearchParam()
@@ -30,7 +31,7 @@ export const TopBar = ({ children, searchName }: TopBarProps) => {
           placeholder={`Search ${searchName}...`}
           className="pl-8"
         />
-        <BookOpenIcon className="text-muted-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
+        <SearchIcon className="text-muted-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
       </div>
       <div className="ml-auto flex items-center gap-3">
         {children}
@@ -39,7 +40,7 @@ export const TopBar = ({ children, searchName }: TopBarProps) => {
             variant={view === 'grid' ? 'secondary' : 'ghost'}
             size="icon"
             className="rounded-none"
-            onClick={() => setParam('view', 'grid')}
+            onClick={() => setView('grid')}
           >
             <GridIcon className="size-4" />
           </Button>
@@ -47,7 +48,7 @@ export const TopBar = ({ children, searchName }: TopBarProps) => {
             variant={view === 'list' ? 'secondary' : 'ghost'}
             size="icon"
             className="rounded-none border-r"
-            onClick={() => setParam('view', 'list')}
+            onClick={() => setView('list')}
           >
             <ListIcon className="size-4" />
           </Button>

@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useViewStorage } from '@/hooks/use-view-storage'
 import { cn } from '@/lib/utils/cn'
 import { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -13,7 +14,7 @@ import FullPagination from '../originui/full-pagination'
 
 /**
  * A reusable data layout component that handles grid/list views, empty states,
- * loading states, and pagination. Automatically reads view and page from search params.
+ * loading states, and pagination. Automatically reads view from localStorage and page from search params.
  *
  * @example
  * <GridItem href="/item/1" actions={<ActionsMenu />}>
@@ -48,7 +49,6 @@ type EmptyStateConfig = {
 
 type DataLayoutProps<T> = React.ComponentProps<'div'> & {
   data: T[] | undefined
-  view?: 'grid' | 'list'
   renderGridItem: (item: T, index: number) => React.ReactNode
   renderListItem: (item: T, index: number) => React.ReactNode
   emptyState: EmptyStateConfig
@@ -175,12 +175,11 @@ export const DataLayout = <T,>({
   renderListItem,
   emptyState,
   skeleton = { count: 6 },
-  view: _view,
 }: DataLayoutProps<T>) => {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { view } = useViewStorage()
 
-  const view = _view ?? (searchParams.get('view') as 'list' | 'grid' | null) ?? 'grid'
   const page = Number(searchParams.get('page') ?? 1)
 
   const totalItems = data?.length ?? 0
