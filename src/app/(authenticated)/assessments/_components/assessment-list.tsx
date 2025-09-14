@@ -3,12 +3,12 @@
 import { DataLayout, GridItem, ListItem } from '@/components/extensions/data-layout'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { DetailAssessment } from '@/lib/types'
 import { formatDate } from '@/lib/utils/format-date'
 import { getTotalGrade } from '@/lib/utils/get-total-grade'
-import { Preloaded, usePreloadedQuery } from 'convex/react'
-import { CalendarIcon, FileTextIcon, PlusIcon, ScaleIcon } from 'lucide-react'
+import { Preloaded, usePreloadedQuery, useQuery } from 'convex/react'
+import { BookIcon, CalendarIcon, FileTextIcon, PlusIcon, ScaleIcon } from 'lucide-react'
 import { api } from '../../../../../convex/_generated/api'
-import { Doc } from '../../../../../convex/_generated/dataModel'
 import { AssessmentActionsMenu } from './assessment-actions-menu'
 import AssessmentDueBadge from './assessment-due-badge'
 import AssessmentFormSheet from './assessment-form-sheet'
@@ -17,21 +17,28 @@ export const AssessmentList = ({
   preloadedAssessments,
   preloadedGrades,
   hasFilter,
-  preloadedSubjects,
-  view,
   itemsPerPage,
+  showSubject = true,
 }: {
   preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
   preloadedGrades: Preloaded<typeof api.grades.getGradesByUser>
   hasFilter: boolean
-  preloadedSubjects?: Preloaded<typeof api.subjects.getSubjectsByUser>
-  view?: 'grid' | 'list'
   itemsPerPage?: number
+  showSubject?: boolean
 }) => {
   const assessments = usePreloadedQuery(preloadedAssessments)
   const grades = usePreloadedQuery(preloadedGrades)
+  const subjects = useQuery(api.subjects.getSubjectsByUser, { archived: false })
 
-  const renderGridItem = (assessment: Doc<'assessments'>) => {
+  const detailAssessments = assessments.map((assessment) => {
+    const subject = subjects?.find((subject) => subject._id === assessment.subjectId)
+    return {
+      ...assessment,
+      subject,
+    }
+  })
+
+  const renderGridItem = (assessment: DetailAssessment) => {
     const assessmentGrades = grades.filter((grade) => grade.assessmentId === assessment._id)
     const totalGrade = getTotalGrade(assessmentGrades)
     const dueDate = assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'N/A'
@@ -42,9 +49,17 @@ export const AssessmentList = ({
         actions={<AssessmentActionsMenu assessment={assessment} />}
       >
         <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <span className="text-lg">{assessment.icon}</span>
-            <p className="line-clamp-2 text-base font-medium break-words">{assessment.name}</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <span className="text-lg">{assessment.icon}</span>
+              <p className="line-clamp-2 text-base font-medium break-words">{assessment.name}</p>
+            </div>
+            {showSubject && (
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <BookIcon className="size-4 shrink-0" />
+                <p className="truncate">{assessment.subject?.name || 'No Subject'}</p>
+              </div>
+            )}
           </div>
           <div className="-mr-10 space-y-3">
             <Separator />
@@ -68,13 +83,14 @@ export const AssessmentList = ({
     )
   }
 
-  const renderListItem = (assessment: Doc<'assessments'>) => {
+  const renderListItem = (assessment: DetailAssessment) => {
     const dueDate = assessment.dueDate ? formatDate(new Date(assessment.dueDate)) : 'N/A'
     return (
       <ListItem
         key={assessment._id}
         href={`/assessments/${assessment._id}`}
         actions={<AssessmentActionsMenu assessment={assessment} />}
+        className="h-28"
       >
         <div className="flex items-center gap-3">
           <span className="text-lg">{assessment.icon}</span>
@@ -83,6 +99,12 @@ export const AssessmentList = ({
               <p className="truncate text-base font-medium">{assessment.name}</p>
               <AssessmentDueBadge assessment={assessment} />
             </div>
+            {showSubject && (
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <BookIcon className="size-4 shrink-0" />
+                <p className="truncate">{assessment.subject?.name || 'No Subject'}</p>
+              </div>
+            )}
             <div className="text-muted-foreground flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1 overflow-hidden">
                 <ScaleIcon className="size-4 shrink-0" />
@@ -122,8 +144,7 @@ export const AssessmentList = ({
 
   return (
     <DataLayout
-      data={assessments}
-      view={view}
+      data={detailAssessments}
       renderGridItem={renderGridItem}
       renderListItem={renderListItem}
       emptyState={emptyState}

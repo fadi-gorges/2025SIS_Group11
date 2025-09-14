@@ -16,13 +16,13 @@ export const VALIDATION_LIMITS = {
   // Subject limits
   SUBJECT_NAME_MAX_LENGTH: 75,
   SUBJECT_CODE_MAX_LENGTH: 10,
-  SUBJECT_DESCRIPTION_MAX_LENGTH: 2000,
-  SUBJECT_TERM_MAX_LENGTH: 25,
+  SUBJECT_DESCRIPTION_MAX_LENGTH: 4000,
+  SUBJECT_TERM_MAX_LENGTH: 50,
   COORDINATOR_NAME_MAX_LENGTH: 100,
 
   // Assessment limits
   ASSESSMENT_NAME_MAX_LENGTH: 75,
-  ASSESSMENT_TASK_MAX_LENGTH: 2000,
+  ASSESSMENT_DESCRIPTION_MAX_LENGTH: 4000,
   ASSESSMENT_WEIGHT_MIN: 0,
   ASSESSMENT_WEIGHT_MAX: 100,
   ASSESSMENT_WEIGHT_STEP: 0.01,
@@ -35,6 +35,11 @@ export const VALIDATION_LIMITS = {
   // Task limits
   TASK_NAME_MAX_LENGTH: 100,
   TASK_DESCRIPTION_MAX_LENGTH: 2000,
+
+  // Timeline limits
+  WEEK_NAME_MAX_LENGTH: 50,
+  HOLIDAY_DURATION_MIN: 1,
+  HOLIDAY_DURATION_MAX: 52, // weeks
 } as const
 
 export const reminderSchedule = ['one_week', 'one_day', 'on_the_day'] as const
@@ -52,6 +57,7 @@ export const assessmentIcons = [
 
 export const taskStatus = ['todo', 'doing', 'done'] as const
 export const taskPriority = ['none', 'low', 'medium', 'high'] as const
+export const taskType = ['assessment', 'task'] as const
 
 // =============================================================================
 // ZOD VALIDATION SCHEMAS
@@ -146,8 +152,8 @@ export const assessmentDescriptionSchema = z
   .string()
   .trim()
   .max(
-    VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH,
-    `Task description must be no more than ${VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH} characters`,
+    VALIDATION_LIMITS.ASSESSMENT_DESCRIPTION_MAX_LENGTH,
+    `Task description must be no more than ${VALIDATION_LIMITS.ASSESSMENT_DESCRIPTION_MAX_LENGTH} characters`,
   )
   .optional()
 export const assessmentIconSchema = z.enum(assessmentIcons, {
@@ -195,6 +201,30 @@ export const taskDescriptionSchema = z
   .optional()
 export const taskStatusSchema = z.enum(taskStatus)
 export const taskPrioritySchema = z.enum(taskPriority)
+export const taskTypeSchema = z.enum(taskType)
+
+/**
+ * Week validation schemas
+ */
+export const weekNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Week name is required')
+  .max(
+    VALIDATION_LIMITS.WEEK_NAME_MAX_LENGTH,
+    `Week name must be no more than ${VALIDATION_LIMITS.WEEK_NAME_MAX_LENGTH} characters`,
+  )
+export const weekDateSchema = z.number().min(1, 'Invalid date')
+export const holidayDurationSchema = z
+  .number()
+  .min(
+    VALIDATION_LIMITS.HOLIDAY_DURATION_MIN,
+    `Duration must be at least ${VALIDATION_LIMITS.HOLIDAY_DURATION_MIN} week`,
+  )
+  .max(
+    VALIDATION_LIMITS.HOLIDAY_DURATION_MAX,
+    `Duration must be no more than ${VALIDATION_LIMITS.HOLIDAY_DURATION_MAX} weeks`,
+  )
 
 // =============================================================================
 // COMPOSITE SCHEMAS
@@ -269,6 +299,33 @@ export const gradeSchema = z.object({
   grade: gradeValueSchema,
 })
 
+/**
+ * Complete week schema
+ */
+export const weekSchema = z.object({
+  name: weekNameSchema,
+  startDate: weekDateSchema,
+  endDate: weekDateSchema,
+  isHoliday: z.boolean(),
+  duration: holidayDurationSchema.optional(),
+})
+
+/**
+ * Complete task schema
+ */
+export const taskSchema = z.object({
+  name: taskNameSchema,
+  type: taskTypeSchema,
+  description: taskDescriptionSchema,
+  weekId: z.string().optional(),
+  dueDate: z.number().optional(),
+  status: taskStatusSchema,
+  priority: taskPrioritySchema,
+  reminderTime: z.number().optional(),
+  subjectId: z.string().optional(),
+  assessmentId: z.string().optional(),
+})
+
 // Export types for TypeScript
 export type LoginData = z.infer<typeof loginSchema>
 export type SignupData = z.infer<typeof signupSchema>
@@ -279,6 +336,8 @@ export type SubjectData = z.infer<typeof subjectSchema>
 export type AssessmentData = z.infer<typeof assessmentSchema>
 export type CreateAssessmentData = z.infer<typeof createAssessmentSchema>
 export type GradeData = z.infer<typeof gradeSchema>
+export type WeekData = z.infer<typeof weekSchema>
+export type TaskData = z.infer<typeof taskSchema>
 
 // =============================================================================
 // VALIDATION HELPER FUNCTIONS

@@ -280,7 +280,7 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      maxLength={VALIDATION_LIMITS.ASSESSMENT_TASK_MAX_LENGTH}
+                      maxLength={VALIDATION_LIMITS.ASSESSMENT_DESCRIPTION_MAX_LENGTH}
                       placeholder="Optional details..."
                       rows={4}
                       {...field}

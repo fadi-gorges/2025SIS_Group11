@@ -1,11 +1,9 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useSetSearchParam } from '@/hooks/use-set-search-param'
-import { useDebouncedSearch } from '@/lib/utils'
-import { BookOpenIcon, GridIcon, ListIcon } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
+import { useViewStorage } from '@/hooks/use-view-storage'
+import { GridIcon, ListIcon } from 'lucide-react'
+import { SearchInput } from './search-input'
 
 type TopBarProps = {
   searchName: string
@@ -13,25 +11,11 @@ type TopBarProps = {
 }
 
 export const TopBar = ({ children, searchName }: TopBarProps) => {
-  const searchParams = useSearchParams()
-
-  const view = (searchParams.get('view') as 'list' | 'grid' | null) ?? 'grid'
-  const search = searchParams.get('search') ?? undefined
-
-  const setParam = useSetSearchParam()
-  const onSearchChange = useDebouncedSearch((value: string) => setParam('search', value || undefined), 300)
+  const { view, setView } = useViewStorage()
 
   return (
     <div className="flex items-center gap-2">
-      <div className="relative w-full max-w-md">
-        <Input
-          defaultValue={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={`Search ${searchName}...`}
-          className="pl-8"
-        />
-        <BookOpenIcon className="text-muted-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
-      </div>
+      <SearchInput searchName={searchName} />
       <div className="ml-auto flex items-center gap-3">
         {children}
         <div className="inline-flex rounded-md border">
@@ -39,7 +23,7 @@ export const TopBar = ({ children, searchName }: TopBarProps) => {
             variant={view === 'grid' ? 'secondary' : 'ghost'}
             size="icon"
             className="rounded-none"
-            onClick={() => setParam('view', 'grid')}
+            onClick={() => setView('grid')}
           >
             <GridIcon className="size-4" />
           </Button>
@@ -47,7 +31,7 @@ export const TopBar = ({ children, searchName }: TopBarProps) => {
             variant={view === 'list' ? 'secondary' : 'ghost'}
             size="icon"
             className="rounded-none border-r"
-            onClick={() => setParam('view', 'list')}
+            onClick={() => setView('list')}
           >
             <ListIcon className="size-4" />
           </Button>

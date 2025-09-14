@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Star, TrendingUp } from 'lucide-react'
+import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, FileTextIcon, Star, TrendingUp } from 'lucide-react'
 import { useMemo } from 'react'
 
 // Mock data shaped according to convex/schema.ts entities
@@ -175,7 +175,7 @@ const DashboardPage = () => {
           <StatCard
             title="Assessments Due"
             value={upcoming.length}
-            icon={<ClipboardList className="text-muted-foreground h-4 w-4" />}
+            icon={<FileTextIcon className="text-muted-foreground h-4 w-4" />}
           />
           <StatCard
             title="Tasks Completed"
@@ -371,7 +371,7 @@ const DashboardPage = () => {
                       <Separator className="my-3" />
                       <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
                         <span className="inline-flex items-center gap-1">
-                          <ClipboardList className="h-3.5 w-3.5" /> {subjectAssessments.length} assessments
+                          <FileTextIcon className="h-3.5 w-3.5" /> {subjectAssessments.length} assessments
                         </span>
                         <span className="inline-flex items-center gap-1">
                           <CheckCircle2 className="h-3.5 w-3.5" /> {completed} completed
