@@ -362,7 +362,6 @@ const SubjectDetail = ({ preloadedSubject, preloadedAssessments, preloadedGrades
               preloadedAssessments={preloadedAssessments}
               preloadedGrades={preloadedGrades}
               hasFilter={false}
-              view="grid"
               itemsPerPage={3}
               showSubject={false}
             />

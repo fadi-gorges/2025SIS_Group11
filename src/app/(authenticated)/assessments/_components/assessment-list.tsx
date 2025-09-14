@@ -17,14 +17,12 @@ export const AssessmentList = ({
   preloadedAssessments,
   preloadedGrades,
   hasFilter,
-  view,
   itemsPerPage,
   showSubject = true,
 }: {
   preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
   preloadedGrades: Preloaded<typeof api.grades.getGradesByUser>
   hasFilter: boolean
-  view?: 'grid' | 'list'
   itemsPerPage?: number
   showSubject?: boolean
 }) => {
@@ -147,7 +145,6 @@ export const AssessmentList = ({
   return (
     <DataLayout
       data={detailAssessments}
-      view={view}
       renderGridItem={renderGridItem}
       renderListItem={renderListItem}
       emptyState={emptyState}
