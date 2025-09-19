@@ -2,7 +2,7 @@ import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
 import { assessmentFields, assessmentObject, gradeObject, subjectObject } from './schema'
-import { assessmentSchema, createAssessmentSchema, validateWeight, validateWithSchema } from './validation'
+import { assessmentFormSchema, assessmentSchema, validateWeight, validateWithSchema } from './validation'
 
 /**
  * Create a new assessment
@@ -20,7 +20,7 @@ export const createAssessment = mutation({
   returns: v.id('assessments'),
   handler: async (ctx, args) => {
     // Validate input using composite schema
-    const validation = validateWithSchema(createAssessmentSchema, args)
+    const validation = validateWithSchema(assessmentFormSchema, args)
 
     if (!validation.isValid) {
       throw new ConvexError(validation.error!)

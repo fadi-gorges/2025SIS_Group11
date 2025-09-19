@@ -2,16 +2,16 @@ import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
 import { weekFields, weekObject } from './schema'
-import { createWeekSchema, validateWithSchema, weekSchema } from './validation'
+import { validateWithSchema, weekFormSchema } from './validation'
 
 /**
  * Create a new week or holiday
  */
 export const createWeek = mutation({
   args: {
-    name: v.string(),
-    startDate: v.number(),
-    isHoliday: v.boolean(),
+    name: weekFields.name,
+    startDate: weekFields.startDate,
+    isHoliday: weekFields.isHoliday,
     duration: v.optional(v.number()),
   },
   returns: v.id('weeks'),
@@ -19,7 +19,7 @@ export const createWeek = mutation({
     const userId = await requireAuth(ctx)
 
     // Validate input using creation schema
-    const validation = validateWithSchema(createWeekSchema, args)
+    const validation = validateWithSchema(weekFormSchema, args)
     if (!validation.isValid) {
       throw new ConvexError(validation.error!)
     }
@@ -131,22 +131,41 @@ export const updateWeek = mutation({
     weekId: v.id('weeks'),
     name: v.optional(weekFields.name),
     startDate: v.optional(weekFields.startDate),
-    endDate: v.optional(weekFields.endDate),
+    duration: v.optional(v.number()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const { data: week } = await requireAuthAndOwnership(ctx, args.weekId)
 
     // Validate using composite schema (only validate fields that are being updated)
-    const validation = validateWithSchema(weekSchema.partial(), args)
+    const validation = validateWithSchema(weekFormSchema.partial(), args)
     if (!validation.isValid) {
       throw new ConvexError(validation.error!)
     }
 
+    const { name, startDate, duration } = validation.data
+
+    // Calculate end date if startDate or duration is being updated
+    let endDate: number | undefined
+    if (startDate !== undefined || duration !== undefined) {
+      const finalStartDate = startDate ?? week.startDate
+      const finalDuration =
+        duration ??
+        (week.isHoliday ? Math.round((week.endDate - week.startDate) / (7 * 24 * 60 * 60 * 1000)) : undefined)
+
+      if (week.isHoliday && finalDuration) {
+        // For holidays, end date is start date + (duration * 7 days)
+        endDate = finalStartDate + finalDuration * 7 * 24 * 60 * 60 * 1000
+      } else {
+        // For regular weeks, end date is start date + 7 days
+        endDate = finalStartDate + 7 * 24 * 60 * 60 * 1000
+      }
+    }
+
     // If updating dates, check for overlaps
-    if (validation.data.startDate !== undefined || validation.data.endDate !== undefined) {
-      const startDate = validation.data.startDate ?? week.startDate
-      const endDate = validation.data.endDate ?? week.endDate
+    if (startDate !== undefined || endDate !== undefined) {
+      const finalStartDate = startDate ?? week.startDate
+      const finalEndDate = endDate ?? week.endDate
 
       const existingWeeks = await ctx.db
         .query('weeks')
@@ -156,9 +175,9 @@ export const updateWeek = mutation({
 
       const hasOverlap = existingWeeks.some((otherWeek) => {
         return (
-          (startDate >= otherWeek.startDate && startDate < otherWeek.endDate) ||
-          (endDate > otherWeek.startDate && endDate <= otherWeek.endDate) ||
-          (startDate <= otherWeek.startDate && endDate >= otherWeek.endDate)
+          (finalStartDate >= otherWeek.startDate && finalStartDate < otherWeek.endDate) ||
+          (finalEndDate > otherWeek.startDate && finalEndDate <= otherWeek.endDate) ||
+          (finalStartDate <= otherWeek.startDate && finalEndDate >= otherWeek.endDate)
         )
       })
 
@@ -167,7 +186,13 @@ export const updateWeek = mutation({
       }
     }
 
-    await ctx.db.patch(args.weekId, validation.data)
+    // Prepare update data
+    const updateData: any = {}
+    if (name !== undefined) updateData.name = name
+    if (startDate !== undefined) updateData.startDate = startDate
+    if (endDate !== undefined) updateData.endDate = endDate
+
+    await ctx.db.patch(args.weekId, updateData)
     return null
   },
 })

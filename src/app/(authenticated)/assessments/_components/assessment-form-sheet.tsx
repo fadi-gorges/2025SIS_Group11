@@ -30,9 +30,9 @@ import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import { Id } from '../../../../../convex/_generated/dataModel'
 import {
+  AssessmentFormData,
+  assessmentFormSchema,
   assessmentIcons,
-  CreateAssessmentData,
-  createAssessmentSchema,
   VALIDATION_LIMITS,
 } from '../../../../../convex/validation'
 
@@ -50,8 +50,8 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
   const [open, setOpen] = useState(false)
   const [subjectOpen, setSubjectOpen] = useState(false)
 
-  const form = useForm<CreateAssessmentData>({
-    resolver: zodResolver(createAssessmentSchema as any),
+  const form = useForm<AssessmentFormData>({
+    resolver: zodResolver(assessmentFormSchema as any),
     defaultValues: {
       name: '',
       icon: '📝',
@@ -63,7 +63,7 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
     },
   })
 
-  const onSubmit = async (data: CreateAssessmentData) => {
+  const onSubmit = async (data: AssessmentFormData) => {
     try {
       const id = await createAssessment({
         name: data.name,

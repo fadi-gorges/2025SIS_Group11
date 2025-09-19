@@ -20,20 +20,22 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils/cn'
 import { useMutation } from 'convex/react'
 import { format } from 'date-fns'
-import { EditIcon, KanbanSquareIcon, MoreVerticalIcon, PlayCircleIcon, TrashIcon } from 'lucide-react'
+import { EditIcon, ListTodoIcon, MoreVerticalIcon, PlayCircleIcon, PlusIcon, TrashIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import { Doc } from '../../../../../convex/_generated/dataModel'
+import TaskFormSheet from '../../tasks/_components/task-form-sheet'
 import TaskItem from './task-item'
-import WeekFormSheet from './week-form-sheet'
+import WeekFormDialog from './week-form-dialog'
 
 type WeekColumnProps = {
   week: Doc<'weeks'>
   tasks: Doc<'tasks'>[]
+  subjects: Doc<'subjects'>[]
 }
 
-const WeekColumn = ({ week, tasks }: WeekColumnProps) => {
+const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
@@ -142,17 +144,27 @@ const WeekColumn = ({ week, tasks }: WeekColumnProps) => {
         <Separator />
         <CardContent className="space-y-2 py-3">
           {tasks && tasks.length > 0 ? (
-            tasks.map((t) => <TaskItem key={t._id} task={t} />)
+            tasks.map((t) => <TaskItem key={t._id} task={t} subject={subjects.find((s) => s._id === t.subjectId)} />)
           ) : (
             <div className="text-muted-foreground grid place-items-center rounded-md border border-dashed py-8 text-sm">
-              <KanbanSquareIcon className="mb-2 size-5" />
+              <ListTodoIcon className="mb-2 size-5" />
               No tasks yet
             </div>
           )}
+
+          {/* Task Creation Component */}
+          <div className="mt-2">
+            <TaskFormSheet weekId={week._id}>
+              <Button variant="outline" className="text-muted-foreground hover:text-foreground w-full justify-start">
+                <PlusIcon className="mr-2 size-4" />
+                Create Task
+              </Button>
+            </TaskFormSheet>
+          </div>
         </CardContent>
       </Card>
 
-      <WeekFormSheet open={isEditOpen} onOpenChange={setIsEditOpen} isHoliday={week.isHoliday} weekToEdit={week} />
+      <WeekFormDialog open={isEditOpen} onOpenChange={setIsEditOpen} isHoliday={week.isHoliday} weekToEdit={week} />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

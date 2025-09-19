@@ -21,9 +21,9 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import type { Doc } from '../../../../../convex/_generated/dataModel'
-import { CreateWeekData, createWeekSchema, VALIDATION_LIMITS } from '../../../../../convex/validation'
+import { VALIDATION_LIMITS, WeekFormData, weekFormSchema } from '../../../../../convex/validation'
 
-type WeekFormSheetProps = {
+type WeekFormDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   isHoliday?: boolean
@@ -31,7 +31,7 @@ type WeekFormSheetProps = {
   weekToEdit?: Doc<'weeks'>
 }
 
-const WeekFormSheet = ({ open, onOpenChange, isHoliday = false, weeks, weekToEdit }: WeekFormSheetProps) => {
+const WeekFormDialog = ({ open, onOpenChange, isHoliday = false, weeks, weekToEdit }: WeekFormDialogProps) => {
   const createWeek = useMutation(api.weeks.createWeek)
   const updateWeek = useMutation(api.weeks.updateWeek)
 
@@ -44,8 +44,8 @@ const WeekFormSheet = ({ open, onOpenChange, isHoliday = false, weeks, weekToEdi
       ? getSuggestedStartDate(weeks)
       : startOfToday().getTime()
 
-  const form = useForm<CreateWeekData>({
-    resolver: zodResolver(createWeekSchema as any),
+  const form = useForm<WeekFormData>({
+    resolver: zodResolver(weekFormSchema as any),
     defaultValues: {
       name: defaultName,
       startDate: defaultStartDate,
@@ -60,22 +60,14 @@ const WeekFormSheet = ({ open, onOpenChange, isHoliday = false, weeks, weekToEdi
     },
   })
 
-  const onSubmit = async (values: CreateWeekData) => {
+  const onSubmit = async (values: WeekFormData) => {
     try {
       if (isEditing) {
-        // Calculate end date for updates
-        let endDate: number
-        if (values.isHoliday && values.duration) {
-          endDate = values.startDate + values.duration * 7 * 24 * 60 * 60 * 1000
-        } else {
-          endDate = values.startDate + 7 * 24 * 60 * 60 * 1000
-        }
-
         await updateWeek({
           weekId: weekToEdit._id,
           name: values.name,
           startDate: values.startDate,
-          endDate,
+          duration: values.duration,
         })
       } else {
         await createWeek(values)
@@ -165,4 +157,4 @@ const WeekFormSheet = ({ open, onOpenChange, isHoliday = false, weeks, weekToEdi
   )
 }
 
-export default WeekFormSheet
+export default WeekFormDialog

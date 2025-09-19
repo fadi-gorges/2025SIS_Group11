@@ -82,7 +82,7 @@ export const taskFields = {
   name: v.string(),
   type: v.union(...taskType.map((type) => v.literal(type))),
   description: v.optional(v.string()),
-  weekId: v.id('weeks'),
+  weekId: v.optional(v.id('weeks')),
   dueDate: v.optional(v.number()),
   status: v.union(...taskStatus.map((status) => v.literal(status))),
   priority: v.union(...taskPriority.map((priority) => v.literal(priority))),

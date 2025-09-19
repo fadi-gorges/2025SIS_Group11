@@ -1,7 +1,7 @@
 'use client'
 
 import WeekColumn from '@/app/(authenticated)/timeline/_components/week-column'
-import WeekFormSheet from '@/app/(authenticated)/timeline/_components/week-form-sheet'
+import WeekFormDialog from '@/app/(authenticated)/timeline/_components/week-form-dialog'
 import SearchInput from '@/components/extensions/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,11 +13,13 @@ import { api } from '../../../../../convex/_generated/api'
 type TimelineBoardProps = {
   preloadedWeeks: Preloaded<typeof api.weeks.getWeeksByUser>
   preloadedTasks: Preloaded<typeof api.tasks.getTasksByUser>
+  preloadedSubjects: Preloaded<typeof api.subjects.getSubjectsByUser>
 }
 
-const TimelineBoard = ({ preloadedWeeks, preloadedTasks }: TimelineBoardProps) => {
+const TimelineBoard = ({ preloadedWeeks, preloadedTasks, preloadedSubjects }: TimelineBoardProps) => {
   const weeks = usePreloadedQuery(preloadedWeeks)
   const tasks = usePreloadedQuery(preloadedTasks)
+  const subjects = usePreloadedQuery(preloadedSubjects)
   const [openWeekForm, setOpenWeekForm] = useState<{
     mode: 'create'
     isHoliday: boolean
@@ -49,14 +51,19 @@ const TimelineBoard = ({ preloadedWeeks, preloadedTasks }: TimelineBoardProps) =
         ) : (
           <div className="flex flex-1 flex-col gap-3">
             {weeks.map((week) => (
-              <WeekColumn key={week._id} week={week} tasks={tasks.filter((task) => task.weekId === week._id)} />
+              <WeekColumn
+                key={week._id}
+                week={week}
+                tasks={tasks.filter((task) => task.weekId === week._id)}
+                subjects={subjects}
+              />
             ))}
           </div>
         )}
       </div>
 
       {openWeekForm && (
-        <WeekFormSheet
+        <WeekFormDialog
           open={!!openWeekForm}
           onOpenChange={() => setOpenWeekForm(null)}
           isHoliday={openWeekForm.isHoliday}
