@@ -4,7 +4,7 @@ import { DataLayout, GridItem, ListItem } from '@/components/extensions/data-lay
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { DetailAssessment } from '@/lib/types'
-import { formatDate } from '@/lib/utils/format-date'
+import { formatDate } from '@/lib/utils/date-utils'
 import { getTotalGrade } from '@/lib/utils/get-total-grade'
 import { Preloaded, usePreloadedQuery, useQuery } from 'convex/react'
 import { BookIcon, CalendarIcon, FileTextIcon, PlusIcon, ScaleIcon } from 'lucide-react'

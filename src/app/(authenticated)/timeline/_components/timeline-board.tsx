@@ -11,14 +11,13 @@ import { useState } from 'react'
 import { api } from '../../../../../convex/_generated/api'
 
 type TimelineBoardProps = {
-  params: { [key: string]: string | string[] | undefined }
   preloadedWeeks: Preloaded<typeof api.weeks.getWeeksByUser>
-  preloadedSubjects: Preloaded<typeof api.subjects.getSubjectsByUser>
-  preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
+  preloadedTasks: Preloaded<typeof api.tasks.getTasksByUser>
 }
 
-const TimelineBoard = ({ params, preloadedWeeks }: TimelineBoardProps) => {
+const TimelineBoard = ({ preloadedWeeks, preloadedTasks }: TimelineBoardProps) => {
   const weeks = usePreloadedQuery(preloadedWeeks)
+  const tasks = usePreloadedQuery(preloadedTasks)
   const [openWeekForm, setOpenWeekForm] = useState<{
     mode: 'create'
     isHoliday: boolean
@@ -50,7 +49,7 @@ const TimelineBoard = ({ params, preloadedWeeks }: TimelineBoardProps) => {
         ) : (
           <div className="flex flex-1 flex-col gap-3">
             {weeks.map((week) => (
-              <WeekColumn key={week._id} week={week} />
+              <WeekColumn key={week._id} week={week} tasks={tasks.filter((task) => task.weekId === week._id)} />
             ))}
           </div>
         )}
