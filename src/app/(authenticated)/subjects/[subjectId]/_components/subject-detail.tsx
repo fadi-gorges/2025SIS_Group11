@@ -92,7 +92,6 @@ const SubjectDetail = ({ preloadedSubject, preloadedAssessments, preloadedGrades
         coordinatorName: data.coordinatorName || undefined,
         coordinatorEmail: data.coordinatorEmail || undefined,
       })
-      toast.success('Subject has been updated.')
       setIsEditing(false)
     } catch (e: any) {
       toast.error(e?.data || 'Failed to update subject.')

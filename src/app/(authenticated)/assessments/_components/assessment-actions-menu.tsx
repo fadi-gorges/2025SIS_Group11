@@ -39,7 +39,6 @@ export const AssessmentActionsMenu = ({ assessment, onEdit }: AssessmentActionsM
     try {
       setIsToggling(true)
       await toggleComplete({ assessmentId: assessment._id })
-      toast.success(assessment.complete ? 'Assessment marked as incomplete.' : 'Assessment marked as complete.')
     } catch {
       toast.error('Failed to update completion status.')
     } finally {
@@ -51,7 +50,6 @@ export const AssessmentActionsMenu = ({ assessment, onEdit }: AssessmentActionsM
     try {
       setIsDeleting(true)
       await deleteAssessment({ assessmentId: assessment._id })
-      toast.success('Assessment has been deleted.')
       setIsDeleteOpen(false)
     } catch {
       toast.error('Failed to delete assessment.')

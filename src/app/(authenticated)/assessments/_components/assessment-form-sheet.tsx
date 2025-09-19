@@ -1,6 +1,6 @@
 'use client'
 
-import DateTimeInput from '@/components/datetime/date-time-input'
+import DateTimePicker from '@/components/datetime/date-time-picker'
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -74,7 +74,6 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
         dueDate: data.dueDate,
         subjectId: data.subjectId as Id<'subjects'>,
       })
-      toast.success('Assessment has been created.')
       form.reset()
       setOpen(false)
       router.push(`/assessments/${id}`)
@@ -260,7 +259,7 @@ export const AssessmentFormSheet = ({ button }: AssessmentFormSheetProps) => {
                 <FormItem>
                   <FormLabel>Due Date</FormLabel>
                   <FormControl>
-                    <DateTimeInput
+                    <DateTimePicker
                       value={field.value ? new Date(field.value) : undefined}
                       onChange={(date: Date | undefined) => field.onChange(date?.getTime())}
                       className="w-full"

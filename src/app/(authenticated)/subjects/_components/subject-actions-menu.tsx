@@ -45,7 +45,6 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
     try {
       setIsArchiving(true)
       await toggleArchive({ subjectId: subject._id })
-      toast.success(subject.archived ? 'Subject has been unarchived.' : 'Subject has been archived.')
     } catch {
       toast.error('Failed to update archive state')
     } finally {
@@ -57,7 +56,6 @@ export const SubjectActionsMenu = ({ subject, onEdit }: SubjectActionsMenuProps)
     try {
       setIsDeleting(true)
       await deleteSubject({ subjectId: subject._id })
-      toast.success('Subject has been deleted.')
     } catch {
       toast.error('Failed to delete subject.')
     } finally {

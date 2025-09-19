@@ -1,6 +1,6 @@
 'use client'
 
-import DateTimeInput from '@/components/datetime/date-time-input'
+import DateTimePicker from '@/components/datetime/date-time-picker'
 import {
   BorderedCard,
   BorderedCardContent,
@@ -92,7 +92,6 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
         description: data.description,
         dueDate: data.dueDate,
       })
-      toast.success('Assessment has been updated.')
       setIsEditing(false)
     } catch (e: any) {
       toast.error(e?.data || 'Failed to update assessment')
@@ -249,7 +248,7 @@ const AssessmentDetail = ({ preloadedDetail }: AssessmentDetailProps) => {
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              <DateTimeInput
+                              <DateTimePicker
                                 showIcon={false}
                                 value={field.value ? new Date(field.value) : undefined}
                                 onChange={(date: Date | undefined) => field.onChange(date?.getTime())}

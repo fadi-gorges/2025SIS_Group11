@@ -115,7 +115,9 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
       form.reset()
       setUploadedFile(undefined)
       setOpen(false)
-      toast.success(`Subject and assessments have been created successfully.`)
+      toast.success(
+        `Subject and ${assessments.length} assessment${assessments.length > 1 ? 's' : ''} have been created successfully.`,
+      )
       router.push(`/subjects/${createResult.subjectId}`)
     } catch (e: any) {
       toast.error(e?.data || 'Failed to process PDF. Please try again or fill in manually.')
@@ -138,7 +140,6 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
         coordinatorName: data.coordinatorName || undefined,
         coordinatorEmail: data.coordinatorEmail || undefined,
       })
-      toast.success('Subject has been created.')
       form.reset()
       setUploadedFile(undefined)
       setOpen(false)

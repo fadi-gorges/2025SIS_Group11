@@ -1,6 +1,6 @@
 'use client'
 
-import DateInput from '@/components/datetime/date-input'
+import DatePicker from '@/components/datetime/date-picker'
 import {
   Credenza,
   CredenzaBody,
@@ -13,43 +13,38 @@ import {
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { generateWeekName, getSuggestedStartDate } from '@/lib/utils/week-utils'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery } from 'convex/react'
-import { addDays } from 'date-fns'
+import { useMutation } from 'convex/react'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { api } from '../../../../../convex/_generated/api'
-import { VALIDATION_LIMITS, weekSchema } from '../../../../../convex/validation'
-
-type WeekFormValues = z.infer<typeof weekSchema>
+import type { Doc } from '../../../../../convex/_generated/dataModel'
+import { CreateWeekData, createWeekSchema, VALIDATION_LIMITS } from '../../../../../convex/validation'
 
 type WeekFormSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  isHolidayDefault?: boolean
+  isHoliday?: boolean
+  weeks: Doc<'weeks'>[]
 }
 
-const WeekFormSheet = ({ open, onOpenChange, isHolidayDefault = false }: WeekFormSheetProps) => {
-  const generateName = useQuery(api.weeks.generateWeekName, { isHoliday: isHolidayDefault })
-  const suggestedStart = useQuery(api.weeks.getSuggestedStartDate, {})
+const WeekFormSheet = ({ open, onOpenChange, isHoliday = false, weeks }: WeekFormSheetProps) => {
   const createWeek = useMutation(api.weeks.createWeek)
 
-  const form = useForm<WeekFormValues>({
-    resolver: zodResolver(weekSchema as any),
+  const generatedName = generateWeekName(weeks, isHoliday)
+  const suggestedStartDate = getSuggestedStartDate(weeks)
+
+  const form = useForm<CreateWeekData>({
+    resolver: zodResolver(createWeekSchema as any),
     defaultValues: {
-      name: generateName || (isHolidayDefault ? 'Holiday' : 'Week 1'),
-      isHoliday: isHolidayDefault,
-      startDate: suggestedStart ?? Date.now(),
-      endDate: addDays(new Date(suggestedStart ?? Date.now()), 7).getTime(),
-      duration: isHolidayDefault ? 1 : undefined,
+      name: generatedName,
+      isHoliday,
+      startDate: suggestedStartDate,
+      duration: isHoliday ? 1 : undefined,
     },
   })
 
-  const startDate = form.watch('startDate')
-  const isHoliday = form.watch('isHoliday')
-  const duration = form.watch('duration')
-
-  const onSubmit = async (values: WeekFormValues) => {
+  const onSubmit = async (values: CreateWeekData) => {
     await createWeek(values)
     onOpenChange(false)
   }
@@ -78,35 +73,19 @@ const WeekFormSheet = ({ open, onOpenChange, isHolidayDefault = false }: WeekFor
                 )}
               />
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start date</FormLabel>
-                      <FormControl>
-                        <DateInput value={new Date(field.value)} onChange={(d) => field.onChange(d.getTime())} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End date</FormLabel>
-                      <FormControl>
-                        <DateInput value={new Date(field.value)} onChange={(d) => field.onChange(d.getTime())} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start date</FormLabel>
+                    <FormControl>
+                      <DatePicker value={new Date(field.value)} onChange={(date) => field.onChange(date?.getTime())} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {isHoliday && (
                 <FormField
@@ -129,10 +108,6 @@ const WeekFormSheet = ({ open, onOpenChange, isHolidayDefault = false }: WeekFor
                   )}
                 />
               )}
-
-              <div className="text-muted-foreground text-xs">
-                Weeks are 7 days long. Holidays use the duration to set end date.
-              </div>
             </form>
           </Form>
         </CredenzaBody>

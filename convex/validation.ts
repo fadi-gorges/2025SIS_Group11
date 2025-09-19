@@ -302,12 +302,17 @@ export const gradeSchema = z.object({
 /**
  * Complete week schema
  */
-export const weekSchema = z.object({
+export const baseWeekSchema = z.object({
   name: weekNameSchema,
   startDate: weekDateSchema,
-  endDate: weekDateSchema,
   isHoliday: z.boolean(),
+})
+export const createWeekSchema = baseWeekSchema.extend({
   duration: holidayDurationSchema.optional(),
+})
+export const weekSchema = baseWeekSchema.extend({
+  current: z.boolean(),
+  endDate: weekDateSchema,
 })
 
 /**
@@ -336,6 +341,7 @@ export type SubjectData = z.infer<typeof subjectSchema>
 export type AssessmentData = z.infer<typeof assessmentSchema>
 export type CreateAssessmentData = z.infer<typeof createAssessmentSchema>
 export type GradeData = z.infer<typeof gradeSchema>
+export type CreateWeekData = z.infer<typeof createWeekSchema>
 export type WeekData = z.infer<typeof weekSchema>
 export type TaskData = z.infer<typeof taskSchema>
 

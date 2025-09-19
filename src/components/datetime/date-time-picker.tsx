@@ -10,13 +10,13 @@ import { useEffect, useState } from 'react'
 import DateInput from './date-input'
 import TimeInput from './time-input'
 
-type DateTimeInputProps = Omit<React.ComponentProps<typeof Button>, 'onChange' | 'value'> & {
+type DateTimePickerProps = Omit<React.ComponentProps<typeof Button>, 'onChange' | 'value'> & {
   showIcon?: boolean
   value?: Date
   onChange: (date: Date | undefined) => void
 }
 
-const DateTimeInput = ({
+const DateTimePicker = ({
   value,
   onChange,
   disabled,
@@ -24,7 +24,7 @@ const DateTimeInput = ({
   children,
   showIcon = true,
   ...props
-}: DateTimeInputProps) => {
+}: DateTimePickerProps) => {
   const [date, setDate] = useState<Date | undefined>(value)
   const [open, setOpen] = useState(false)
 
@@ -123,4 +123,4 @@ const DateTimeInput = ({
   )
 }
 
-export default DateTimeInput
+export default DateTimePicker
