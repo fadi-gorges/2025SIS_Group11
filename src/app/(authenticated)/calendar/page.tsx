@@ -1,12 +1,35 @@
 'use client'
 
+import { useState } from 'react'
 import { SimpleCalendar } from '@/components/calendar/simple-calendar'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import Heading from '@/components/page/heading'
 import { Button } from '@/components/ui/button'
 import { PlusIcon, CalendarIcon } from 'lucide-react'
+import { EventFormModal } from './_components/event-form-modal'
+import { Doc } from '../../../../convex/_generated/dataModel'
+
+type CalendarEvent = Doc<'calendarEvents'>
 
 export default function CalendarPage() {
+  const [showEventForm, setShowEventForm] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const [selectedEvents, setSelectedEvents] = useState<CalendarEvent[]>([])
+
+  const handleAddEvent = () => {
+    setShowEventForm(true)
+  }
+
+  const handleDateSelect = (date: Date, events: CalendarEvent[]) => {
+    setSelectedDate(date)
+    setSelectedEvents(events)
+  }
+
+  const handleEventCreated = () => {
+    // Events will automatically refresh due to Convex reactivity
+    // No manual refresh needed
+  }
+
   return (
     <SidebarPage>
       <div className="space-y-6">
@@ -21,7 +44,7 @@ export default function CalendarPage() {
               <CalendarIcon className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={handleAddEvent}>
               <PlusIcon className="mr-2 h-4 w-4" />
               Add Event
             </Button>
@@ -29,7 +52,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Calendar */}
-        <SimpleCalendar />
+        <SimpleCalendar onDateSelect={handleDateSelect} />
         
         {/* Placeholder for future features */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -52,6 +75,14 @@ export default function CalendarPage() {
             </p>
           </div>
         </div>
+
+        {/* Event Form Modal */}
+        <EventFormModal
+          open={showEventForm}
+          onOpenChange={setShowEventForm}
+          selectedDate={selectedDate}
+          onEventCreated={handleEventCreated}
+        />
       </div>
     </SidebarPage>
   )
