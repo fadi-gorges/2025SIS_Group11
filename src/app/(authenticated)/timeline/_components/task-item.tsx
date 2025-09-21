@@ -2,18 +2,29 @@
 
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/cn'
-import { CalendarIcon, CheckSquareIcon, SquareIcon } from 'lucide-react'
-import { useState } from 'react'
+import { taskPriorityMap, taskStatusMap, taskTypeMap } from '@/lib/utils/task-utils'
+import { BookIcon, CalendarIcon, CheckSquareIcon, SquareIcon } from 'lucide-react'
+import React, { useState } from 'react'
 import { Doc } from '../../../../../convex/_generated/dataModel'
 
 type TaskItemProps = {
   task: Doc<'tasks'>
+  subject?: { name: string; code?: string } | null
   selected?: boolean
   onToggle?: (selected: boolean) => void
 }
 
-const TaskItem = ({ task, selected = false, onToggle }: TaskItemProps) => {
+const TaskItem = ({ task, subject, selected = false, onToggle }: TaskItemProps) => {
   const [hover, setHover] = useState(false)
+
+  // Format due date to show day and month
+  const formatDueDate = (timestamp: number) => {
+    const date = new Date(timestamp)
+    return date.toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'short',
+    })
+  }
 
   return (
     <div
@@ -36,21 +47,57 @@ const TaskItem = ({ task, selected = false, onToggle }: TaskItemProps) => {
       </button>
 
       <div className="pl-6">
-        <div className="flex items-center justify-between gap-3">
-          <h4 className="truncate font-medium">{task.name}</h4>
-          <Badge variant="secondary" className="shrink-0">
-            {task.type}
-          </Badge>
-        </div>
-        <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
-          {task.dueDate && (
-            <span className="inline-flex items-center gap-1">
-              <CalendarIcon className="size-3.5" /> {new Date(task.dueDate).toLocaleDateString('en-AU')}
-            </span>
+        {/* Horizontal inline layout */}
+        <div className="flex items-center gap-3 text-sm">
+          {/* Task/Assessment Icon */}
+          <div className="shrink-0">{React.createElement(taskTypeMap[task.type].icon, { className: 'size-4' })}</div>
+
+          {/* Task Name */}
+          <span className="min-w-0 flex-1 truncate font-medium">{task.name}</span>
+
+          {/* Subject Name - Hidden on mobile */}
+          {subject && (
+            <Badge variant="outline" className="hidden max-w-64 lg:flex">
+              <BookIcon className="size-3 shrink-0" />
+              <span className="truncate">{subject.name}</span>
+            </Badge>
           )}
-          <span className="capitalize">{task.status}</span>
-          <span>•</span>
-          <span className="capitalize">{task.priority} priority</span>
+
+          {/* Priority */}
+          {task.priority !== 'none' && (
+            <Badge
+              variant={
+                task.priority === 'high'
+                  ? 'destructive'
+                  : task.priority === 'medium'
+                    ? 'warning'
+                    : task.priority === 'low'
+                      ? 'secondary'
+                      : 'outline'
+              }
+              className="capitalize"
+            >
+              {React.createElement(taskPriorityMap[task.priority].icon, { className: 'size-3' })}
+              <span className="hidden md:inline">{task.priority}</span>
+            </Badge>
+          )}
+
+          {/* Status */}
+          <Badge
+            variant={task.status === 'done' ? 'success' : task.status === 'doing' ? 'default' : 'outline'}
+            className="capitalize"
+          >
+            {React.createElement(taskStatusMap[task.status].icon, { className: 'size-3' })}
+            <span className="hidden md:inline">{task.status === 'todo' ? 'To Do' : task.status}</span>
+          </Badge>
+
+          {/* Due Date */}
+          {task.dueDate && (
+            <Badge variant="outline">
+              <CalendarIcon className="size-3" />
+              <span className="hidden md:inline">{formatDueDate(task.dueDate)}</span>
+            </Badge>
+          )}
         </div>
       </div>
     </div>

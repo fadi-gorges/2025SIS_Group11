@@ -14,10 +14,10 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
-import { getTotalGrade } from '@/lib/utils/get-total-grade'
+import { getTotalGrade } from '@/lib/utils/grade-utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react'
-import { CalendarIcon, CheckIcon, FileTextIcon, HashIcon, MailIcon, UserIcon, XIcon } from 'lucide-react'
+import { BookIcon, CalendarIcon, CheckIcon, FileTextIcon, HashIcon, MailIcon, UserIcon, XIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'nextjs-toploader/app'
 import { useEffect, useState } from 'react'
@@ -92,7 +92,6 @@ const SubjectDetail = ({ preloadedSubject, preloadedAssessments, preloadedGrades
         coordinatorName: data.coordinatorName || undefined,
         coordinatorEmail: data.coordinatorEmail || undefined,
       })
-      toast.success('Subject has been updated.')
       setIsEditing(false)
     } catch (e: any) {
       toast.error(e?.data || 'Failed to update subject.')
@@ -130,7 +129,10 @@ const SubjectDetail = ({ preloadedSubject, preloadedAssessments, preloadedGrades
                           )}
                         />
                       ) : (
-                        <h1 className="line-clamp-2 text-3xl font-bold tracking-tight break-words">{subject.name}</h1>
+                        <>
+                          <BookIcon className="size-6 shrink-0" />
+                          <h1 className="line-clamp-2 text-3xl font-bold tracking-tight break-words">{subject.name}</h1>
+                        </>
                       )}
                       {subject.archived && (
                         <Badge variant="secondary" className="text-xs">

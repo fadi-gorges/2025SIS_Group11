@@ -287,7 +287,7 @@ export const assessmentSchema = z.object({
   description: assessmentDescriptionSchema,
   dueDate: assessmentDueDateSchema,
 })
-export const createAssessmentSchema = assessmentSchema.extend({
+export const assessmentFormSchema = assessmentSchema.extend({
   subjectId: z.string().min(1, 'Please select a subject'),
 })
 
@@ -302,12 +302,17 @@ export const gradeSchema = z.object({
 /**
  * Complete week schema
  */
-export const weekSchema = z.object({
+export const baseWeekSchema = z.object({
   name: weekNameSchema,
   startDate: weekDateSchema,
-  endDate: weekDateSchema,
   isHoliday: z.boolean(),
+})
+export const weekFormSchema = baseWeekSchema.extend({
   duration: holidayDurationSchema.optional(),
+})
+export const weekSchema = baseWeekSchema.extend({
+  current: z.boolean(),
+  endDate: weekDateSchema,
 })
 
 /**
@@ -325,6 +330,7 @@ export const taskSchema = z.object({
   subjectId: z.string().optional(),
   assessmentId: z.string().optional(),
 })
+export const taskFormSchema = taskSchema.omit({ type: true, assessmentId: true })
 
 // Export types for TypeScript
 export type LoginData = z.infer<typeof loginSchema>
@@ -334,10 +340,12 @@ export type ReminderFormData = z.infer<typeof reminderFormSchema>
 export type UserData = z.infer<typeof userSchema>
 export type SubjectData = z.infer<typeof subjectSchema>
 export type AssessmentData = z.infer<typeof assessmentSchema>
-export type CreateAssessmentData = z.infer<typeof createAssessmentSchema>
+export type AssessmentFormData = z.infer<typeof assessmentFormSchema>
 export type GradeData = z.infer<typeof gradeSchema>
+export type WeekFormData = z.infer<typeof weekFormSchema>
 export type WeekData = z.infer<typeof weekSchema>
 export type TaskData = z.infer<typeof taskSchema>
+export type TaskFormData = z.infer<typeof taskFormSchema>
 
 // =============================================================================
 // VALIDATION HELPER FUNCTIONS

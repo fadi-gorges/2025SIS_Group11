@@ -3,7 +3,7 @@ import { Doc, Id } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
 import { requireAuth, requireAuthAndOwnership } from './authHelpers'
 import { taskFields, taskObject } from './schema'
-import { taskSchema, validateWithSchema } from './validation'
+import { taskFormSchema, validateWithSchema } from './validation'
 
 /**
  * Create a new task
@@ -11,22 +11,20 @@ import { taskSchema, validateWithSchema } from './validation'
 export const createTask = mutation({
   args: {
     name: taskFields.name,
-    type: taskFields.type,
     description: taskFields.description,
-    weekId: taskFields.weekId,
+    weekId: v.optional(taskFields.weekId),
     dueDate: taskFields.dueDate,
     status: taskFields.status,
     priority: taskFields.priority,
     reminderTime: taskFields.reminderTime,
     subjectId: taskFields.subjectId,
-    assessmentId: taskFields.assessmentId,
   },
   returns: v.id('tasks'),
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx)
 
     // Validate input using composite schema
-    const validation = validateWithSchema(taskSchema, args)
+    const validation = validateWithSchema(taskFormSchema, args)
     if (!validation.isValid) {
       throw new ConvexError(validation.error!)
     }
@@ -38,15 +36,13 @@ export const createTask = mutation({
     if (validation.data.subjectId) {
       await requireAuthAndOwnership(ctx, validation.data.subjectId as Id<'subjects'>) // subjectId validation
     }
-    if (validation.data.assessmentId) {
-      await requireAuthAndOwnership(ctx, validation.data.assessmentId as Id<'assessments'>) // assessmentId validation
-    }
 
     return await ctx.db.insert('tasks', {
       ...validation.data,
+      type: 'task',
       userId,
       subjectId: validation.data.subjectId as Id<'subjects'>,
-      assessmentId: validation.data.assessmentId as Id<'assessments'>,
+      assessmentId: undefined,
       weekId: validation.data.weekId as Id<'weeks'>,
     })
   },
@@ -243,7 +239,6 @@ export const updateTask = mutation({
   args: {
     taskId: v.id('tasks'),
     name: v.optional(taskFields.name),
-    type: v.optional(taskFields.type),
     description: v.optional(taskFields.description),
     weekId: v.optional(taskFields.weekId),
     dueDate: v.optional(taskFields.dueDate),
@@ -251,14 +246,13 @@ export const updateTask = mutation({
     priority: v.optional(taskFields.priority),
     reminderTime: v.optional(taskFields.reminderTime),
     subjectId: v.optional(taskFields.subjectId),
-    assessmentId: v.optional(taskFields.assessmentId),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const { data: task } = await requireAuthAndOwnership(ctx, args.taskId)
 
     // Validate using composite schema (only validate fields that are being updated)
-    const validation = validateWithSchema(taskSchema.partial(), args)
+    const validation = validateWithSchema(taskFormSchema.partial(), args)
     if (!validation.isValid) {
       throw new ConvexError(validation.error!)
     }
@@ -270,15 +264,12 @@ export const updateTask = mutation({
     if (validation.data.subjectId !== undefined && validation.data.subjectId !== null) {
       await requireAuthAndOwnership(ctx, validation.data.subjectId as Id<'subjects'>)
     }
-    if (validation.data.assessmentId !== undefined && validation.data.assessmentId !== null) {
-      await requireAuthAndOwnership(ctx, validation.data.assessmentId as Id<'assessments'>)
-    }
 
     await ctx.db.patch(args.taskId, {
       ...validation.data,
       weekId: validation.data as Id<'weeks'>,
-      subjectId: validation.data.subjectId as Id<'subjects'>,
-      assessmentId: validation.data.assessmentId as Id<'assessments'>,
+      subjectId: task.assessmentId ? task.subjectId : (validation.data.subjectId as Id<'subjects'>),
+      assessmentId: task.assessmentId,
     })
     return null
   },
@@ -330,14 +321,13 @@ export const batchUpdateTasks = mutation({
     updates: v.object({
       status: v.optional(taskFields.status),
       priority: v.optional(taskFields.priority),
-      weekId: v.optional(v.union(taskFields.weekId, v.null())),
+      weekId: v.optional(v.union(v.id('weeks'), v.null())),
     }),
   },
   returns: v.object({
     updatedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await requireAuth(ctx)
     let updatedCount = 0
 
     // Validate week ownership if weekId is being set

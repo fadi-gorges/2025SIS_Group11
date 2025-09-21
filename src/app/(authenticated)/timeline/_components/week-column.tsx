@@ -14,30 +14,59 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils/cn'
-import { useQuery as useConvexQuery, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { format } from 'date-fns'
-import { Layers3Icon, PlayCircleIcon } from 'lucide-react'
-import { api, api as convexApi } from '../../../../../convex/_generated/api'
+import { EditIcon, ListTodoIcon, MoreVerticalIcon, PlayCircleIcon, PlusIcon, TrashIcon } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { api } from '../../../../../convex/_generated/api'
 import { Doc } from '../../../../../convex/_generated/dataModel'
+import TaskFormSheet from '../../tasks/_components/task-form-sheet'
 import TaskItem from './task-item'
+import WeekFormDialog from './week-form-dialog'
 
 type WeekColumnProps = {
   week: Doc<'weeks'>
-  isCurrent: boolean
-  canStart?: boolean
-  onStartWeek?: () => void
+  tasks: Doc<'tasks'>[]
+  subjects: Doc<'subjects'>[]
 }
 
-const WeekColumn = ({ week, isCurrent, canStart, onStartWeek }: WeekColumnProps) => {
-  const stats = useQuery(api.weeks.getWeekStats, { weekId: week._id })
-  const tasks = useConvexQuery(convexApi.tasks.getTasksByWeek, { weekId: week._id })
+const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+  const startWeek = useMutation(api.weeks.startWeek)
+  const deleteWeek = useMutation(api.weeks.deleteWeek)
+
+  const totalTasks = tasks?.length
+  const todoTasks = tasks?.filter((task) => task.status === 'todo').length
+  const doingTasks = tasks?.filter((task) => task.status === 'doing').length
+  const doneTasks = tasks?.filter((task) => task.status === 'done').length
+
+  const onStartWeek = async () => {
+    const { tasksMovedCount } = await startWeek({ weekId: week._id })
+    if (tasksMovedCount > 0) {
+      toast.success(`${tasksMovedCount} tasks moved to ${week.name}`)
+    }
+  }
+
+  const onDeleteWeek = async () => {
+    await deleteWeek({ weekId: week._id })
+    setIsDeleteDialogOpen(false)
+  }
 
   return (
-    <div className={cn('w-full', week.isHoliday && 'opacity-80')}>
-      <Card className={cn('border-2', isCurrent ? 'border-primary/60' : 'border-transparent')}>
+    <div className="w-full">
+      <Card
+        className={cn(
+          'border-2',
+          week.current ? (week.isHoliday ? 'border-amber-600/60' : 'border-primary/60') : 'border-transparent',
+        )}
+      >
         <CardHeader className="space-y-1">
           <CardTitle className="flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -49,39 +78,64 @@ const WeekColumn = ({ week, isCurrent, canStart, onStartWeek }: WeekColumnProps)
                 {format(new Date(week.startDate), 'EEE dd MMM')} – {format(new Date(week.endDate), 'EEE dd MMM')}
               </p>
             </div>
-            {isCurrent ? (
-              <Badge variant="secondary">Current Week</Badge>
-            ) : canStart ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="sm" className="shrink-0">
-                    <PlayCircleIcon className="size-4" /> Start Week
+            <div className="flex items-center gap-2">
+              {week.current ? (
+                <Badge variant="secondary">Current Week</Badge>
+              ) : (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" className="shrink-0">
+                      <PlayCircleIcon className="size-4" /> Start Week
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Start {week.name}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Incomplete tasks from the previous week will be moved here.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={onStartWeek}>Start</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVerticalIcon className="size-4" />
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Start {week.name}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Incomplete tasks from the previous week will be moved here.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onStartWeek}>Start</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : null}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                    <EditIcon className="size-4" />
+                    Edit week
+                  </DropdownMenuItem>
+                  {!week.current && (
+                    <DropdownMenuItem
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <TrashIcon className="text-destructive size-4" />
+                      Delete week
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardTitle>
-          {stats ? (
+          {tasks ? (
             <div className="text-muted-foreground flex gap-2 text-xs">
-              <span>{stats.totalTasks} tasks</span>
+              <span>{totalTasks} tasks</span>
               <span>•</span>
-              <span>{stats.todoTasks} todo</span>
+              <span>{todoTasks} todo</span>
               <span>•</span>
-              <span>{stats.doingTasks} in progress</span>
+              <span>{doingTasks} in progress</span>
               <span>•</span>
-              <span>{stats.doneTasks} done</span>
+              <span>{doneTasks} done</span>
             </div>
           ) : (
             <Skeleton className="h-4 w-48" />
@@ -90,15 +144,47 @@ const WeekColumn = ({ week, isCurrent, canStart, onStartWeek }: WeekColumnProps)
         <Separator />
         <CardContent className="space-y-2 py-3">
           {tasks && tasks.length > 0 ? (
-            tasks.map((t) => <TaskItem key={t._id} task={t} />)
+            tasks.map((t) => <TaskItem key={t._id} task={t} subject={subjects.find((s) => s._id === t.subjectId)} />)
           ) : (
             <div className="text-muted-foreground grid place-items-center rounded-md border border-dashed py-8 text-sm">
-              <Layers3Icon className="mb-2 size-5" />
+              <ListTodoIcon className="mb-2 size-5" />
               No tasks yet
             </div>
           )}
+
+          {/* Task Creation Component */}
+          <div className="mt-2">
+            <TaskFormSheet weekId={week._id}>
+              <Button variant="outline" className="text-muted-foreground hover:text-foreground w-full justify-start">
+                <PlusIcon className="mr-2 size-4" />
+                Create Task
+              </Button>
+            </TaskFormSheet>
+          </div>
         </CardContent>
       </Card>
+
+      <WeekFormDialog open={isEditOpen} onOpenChange={setIsEditOpen} isHoliday={week.isHoliday} weekToEdit={week} />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {week.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. All tasks assigned to this week will be unassigned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onDeleteWeek}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,44 +1,29 @@
 'use client'
 
 import WeekColumn from '@/app/(authenticated)/timeline/_components/week-column'
-import WeekFormSheet from '@/app/(authenticated)/timeline/_components/week-form-sheet'
+import WeekFormDialog from '@/app/(authenticated)/timeline/_components/week-form-dialog'
 import SearchInput from '@/components/extensions/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useMutation, usePreloadedQuery, useQuery, type Preloaded } from 'convex/react'
+import { usePreloadedQuery, type Preloaded } from 'convex/react'
 import { CalendarPlusIcon, CalendarRangeIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { api } from '../../../../../convex/_generated/api'
-import { Id } from '../../../../../convex/_generated/dataModel'
 
 type TimelineBoardProps = {
-  params: { [key: string]: string | string[] | undefined }
   preloadedWeeks: Preloaded<typeof api.weeks.getWeeksByUser>
+  preloadedTasks: Preloaded<typeof api.tasks.getTasksByUser>
   preloadedSubjects: Preloaded<typeof api.subjects.getSubjectsByUser>
-  preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
 }
 
-const TimelineBoard = ({ params, preloadedWeeks }: TimelineBoardProps) => {
+const TimelineBoard = ({ preloadedWeeks, preloadedTasks, preloadedSubjects }: TimelineBoardProps) => {
   const weeks = usePreloadedQuery(preloadedWeeks)
+  const tasks = usePreloadedQuery(preloadedTasks)
+  const subjects = usePreloadedQuery(preloadedSubjects)
   const [openWeekForm, setOpenWeekForm] = useState<{
     mode: 'create'
     isHoliday: boolean
   } | null>(null)
-
-  const now = Date.now()
-  const futureWeeks = weeks.filter((w) => w.startDate > now && !w.isHoliday)
-  const nextWeekCandidate = useMemo(() => {
-    if (futureWeeks.length === 0) return null
-    return futureWeeks.reduce((min, w) => (w.startDate < min.startDate ? w : min), futureWeeks[0])
-  }, [futureWeeks])
-
-  const currentWeek = useQuery(api.weeks.getCurrentWeek, {})
-  const startWeek = useMutation(api.weeks.startWeek)
-
-  const onStartWeek = async (weekId: Id<'weeks'>) => {
-    const result = await startWeek({ weekId })
-    // trigger any refresh if needed by refetching stats on involved weeks
-  }
 
   return (
     <div className="flex h-full flex-1 flex-col gap-4">
@@ -56,7 +41,7 @@ const TimelineBoard = ({ params, preloadedWeeks }: TimelineBoardProps) => {
 
       <div className="relative flex flex-1 flex-col gap-3 pb-2">
         {weeks.length === 0 ? (
-          <div className="mx-auto flex w-full max-w-lg flex-col items-center justify-center gap-3 text-center opacity-80">
+          <div className="mx-auto flex w-full max-w-lg flex-col items-center justify-center gap-3 text-center">
             <Badge variant="secondary">No weeks yet</Badge>
             <p className="text-muted-foreground text-sm">Create your first week to start planning.</p>
             <Button size="sm" onClick={() => setOpenWeekForm({ mode: 'create', isHoliday: false })}>
@@ -69,9 +54,8 @@ const TimelineBoard = ({ params, preloadedWeeks }: TimelineBoardProps) => {
               <WeekColumn
                 key={week._id}
                 week={week}
-                isCurrent={now >= week.startDate && now < week.endDate && !week.isHoliday}
-                canStart={nextWeekCandidate?._id === week._id}
-                onStartWeek={() => onStartWeek(week._id)}
+                tasks={tasks.filter((task) => task.weekId === week._id)}
+                subjects={subjects}
               />
             ))}
           </div>
@@ -79,10 +63,11 @@ const TimelineBoard = ({ params, preloadedWeeks }: TimelineBoardProps) => {
       </div>
 
       {openWeekForm && (
-        <WeekFormSheet
+        <WeekFormDialog
           open={!!openWeekForm}
           onOpenChange={() => setOpenWeekForm(null)}
-          isHolidayDefault={openWeekForm.isHoliday}
+          isHoliday={openWeekForm.isHoliday}
+          weeks={weeks}
         />
       )}
     </div>
