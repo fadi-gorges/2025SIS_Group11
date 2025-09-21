@@ -93,6 +93,17 @@ export const taskFields = {
 } as const
 
 /**
+ * Calendar event field definitions
+ */
+export const calendarEventFields = {
+  name: v.string(),
+  description: v.optional(v.string()),
+  date: v.number(), // timestamp
+  time: v.optional(v.string()), // formatted time string like "14:30"
+  userId: v.id('users'),
+} as const
+
+/**
  * Complete object schemas with system fields for use in Convex functions
  */
 export const userObject = v.object({
@@ -129,6 +140,12 @@ export const taskObject = v.object({
   _id: v.id('tasks'),
   _creationTime: v.number(),
   ...taskFields,
+})
+
+export const calendarEventObject = v.object({
+  _id: v.id('calendarEvents'),
+  _creationTime: v.number(),
+  ...calendarEventFields,
 })
 
 // =============================================================================
@@ -183,5 +200,12 @@ export default defineSchema({
     .index('by_subject', ['subjectId'])
     .index('by_assessment', ['assessmentId'])
     .index('by_due_date', ['dueDate'])
+    .searchIndex('search_name', { searchField: 'name', filterFields: ['userId'] }),
+
+  // Calendar events - represents calendar events and appointments
+  calendarEvents: defineTable(calendarEventFields)
+    .index('by_user', ['userId'])
+    .index('by_user_and_date', ['userId', 'date'])
+    .index('by_date', ['date'])
     .searchIndex('search_name', { searchField: 'name', filterFields: ['userId'] }),
 })
