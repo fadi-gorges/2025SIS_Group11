@@ -4,19 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/utils/format-date'
+import { formatDate } from '@/lib/utils/date-utils'
 import { CalendarIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import DateInput from './date-input'
 import TimeInput from './time-input'
 
-type DateTimeInputProps = Omit<React.ComponentProps<typeof Button>, 'onChange' | 'value'> & {
+type DateTimePickerProps = Omit<React.ComponentProps<typeof Button>, 'onChange' | 'value'> & {
   showIcon?: boolean
   value?: Date
   onChange: (date: Date | undefined) => void
 }
 
-const DateTimeInput = ({
+const DateTimePicker = ({
   value,
   onChange,
   disabled,
@@ -24,7 +24,7 @@ const DateTimeInput = ({
   children,
   showIcon = true,
   ...props
-}: DateTimeInputProps) => {
+}: DateTimePickerProps) => {
   const [date, setDate] = useState<Date | undefined>(value)
   const [open, setOpen] = useState(false)
 
@@ -123,4 +123,4 @@ const DateTimeInput = ({
   )
 }
 
-export default DateTimeInput
+export default DateTimePicker

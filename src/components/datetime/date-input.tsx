@@ -189,25 +189,6 @@ const DateInput = ({ value, onChange, disabled = false, className, children, ...
     <div className={cn('flex items-center rounded-lg border px-1 text-sm', className)} {...props}>
       <Input
         type="text"
-        ref={monthRef}
-        max={12}
-        maxLength={2}
-        value={date.month.toString()}
-        onChange={handleInputChange('month')}
-        onKeyDown={handleKeyDown('month')}
-        onFocus={(e) => {
-          if (window.innerWidth > 1024) {
-            e.target.select()
-          }
-        }}
-        onBlur={handleBlur('month')}
-        className="w-6 border-none p-0 text-center outline-none"
-        placeholder="M"
-        disabled={disabled}
-      />
-      <span className="-mx-px opacity-20">/</span>
-      <Input
-        type="text"
         ref={dayRef}
         max={31}
         maxLength={2}
@@ -222,6 +203,25 @@ const DateInput = ({ value, onChange, disabled = false, className, children, ...
         onBlur={handleBlur('day')}
         className="w-7 border-none p-0 text-center outline-none"
         placeholder="D"
+        disabled={disabled}
+      />
+      <span className="-mx-px opacity-20">/</span>
+      <Input
+        type="text"
+        ref={monthRef}
+        max={12}
+        maxLength={2}
+        value={date.month.toString()}
+        onChange={handleInputChange('month')}
+        onKeyDown={handleKeyDown('month')}
+        onFocus={(e) => {
+          if (window.innerWidth > 1024) {
+            e.target.select()
+          }
+        }}
+        onBlur={handleBlur('month')}
+        className="w-6 border-none p-0 text-center outline-none"
+        placeholder="M"
         disabled={disabled}
       />
       <span className="-mx-px opacity-20">/</span>

@@ -71,7 +71,7 @@ export const weekFields = {
   startDate: v.number(),
   endDate: v.number(),
   isHoliday: v.boolean(),
-  duration: v.optional(v.number()), // in weeks, for holidays
+  current: v.boolean(),
   userId: v.id('users'),
 } as const
 
@@ -82,7 +82,7 @@ export const taskFields = {
   name: v.string(),
   type: v.union(...taskType.map((type) => v.literal(type))),
   description: v.optional(v.string()),
-  weekId: v.id('weeks'),
+  weekId: v.optional(v.id('weeks')),
   dueDate: v.optional(v.number()),
   status: v.union(...taskStatus.map((status) => v.literal(status))),
   priority: v.union(...taskPriority.map((priority) => v.literal(priority))),
@@ -171,6 +171,7 @@ export default defineSchema({
   weeks: defineTable(weekFields)
     .index('by_user', ['userId'])
     .index('by_user_and_start_date', ['userId', 'startDate'])
+    .index('by_user_and_current', ['userId', 'current'])
     .index('by_start_date', ['startDate']),
 
   // Tasks - represents work items that can be assigned to weeks
