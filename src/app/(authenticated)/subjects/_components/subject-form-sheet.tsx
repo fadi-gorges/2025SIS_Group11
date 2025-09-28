@@ -68,12 +68,36 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
       setIsProcessing(true)
       setProcessingStage('Uploading PDF...')
 
+      // Ensure we have a proper File object with actual content
+      const file = uploadedFile.file
+      
+      // File validation complete
+      
+      // Validate that we have actual file content, not just a path
+      if (file.size === 0) {
+        throw new Error('File appears to be empty or invalid')
+      }
+      
+      // Additional validation: ensure the file has a proper name and type
+      if (!file.name || file.name.trim() === '') {
+        throw new Error('File name is invalid')
+      }
+      
+      if (!file.type || file.type.trim() === '') {
+        throw new Error('File type is invalid')
+      }
+
       // Upload file to Convex
       const uploadUrl = await generateUploadUrl()
+      
+      // Ensure we're sending the file as binary data, not as a path
       const response = await fetch(uploadUrl, {
         method: 'POST',
-        headers: { 'Content-Type': uploadedFile.file.type },
-        body: uploadedFile.file,
+        headers: { 
+          'Content-Type': file.type,
+          'Content-Length': file.size.toString()
+        },
+        body: file,
       })
 
       if (!response.ok) {
