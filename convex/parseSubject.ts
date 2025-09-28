@@ -24,8 +24,8 @@ function convertWindowsPathToFileUrl(filePath: string): string {
     return filePath
   }
   
-  // Check if it's a Windows path (starts with drive letter)
-  if (/^[A-Za-z]:\\/.test(filePath)) {
+  // Check if it's a Windows path (starts with drive letter and colon)
+  if (/^[A-Za-z]:/.test(filePath)) {
     // Convert backslashes to forward slashes and add file:// prefix
     const normalizedPath = filePath.replace(/\\/g, '/')
     return `file:///${normalizedPath}`
@@ -107,36 +107,25 @@ export const parseSubject = action({
     ),
   }),
   handler: async (ctx, args) => {
-    // Get the PDF file from Convex storage with Windows path conversion
-    const fileUrl = await ctx.storage.getUrl(args.fileId)
-    if (!fileUrl) {
-      throw new ConvexError('File not found')
-    }
-
-    // Convert Windows path to file:// URL format if needed
-    const convertedFileUrl = convertWindowsPathToFileUrl(fileUrl)
-
-    // Download the file
-    let response
     try {
-      response = await fetch(convertedFileUrl)
-      if (!response.ok) {
-        throw new ConvexError(`Failed to download file: ${response.status} ${response.statusText}`)
-      }
-    } catch (error) {
-      // If the converted URL fails, try the original URL
+      console.log('parseSubject handler started with fileId:', args.fileId)
+      
+      // Get the file directly from Convex storage instead of using URL
+      console.log('Getting file directly from storage...')
+      let fileBytes
       try {
-        response = await fetch(fileUrl)
-        if (!response.ok) {
-          throw new ConvexError(`Failed to download file with original URL: ${response.status} ${response.statusText}`)
+        const fileBlob = await ctx.storage.get(args.fileId)
+        if (!fileBlob) {
+          throw new ConvexError('File not found in storage')
         }
-      } catch (fallbackError) {
-        throw new ConvexError(`Failed to fetch file: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        // Convert Blob to ArrayBuffer
+        const fileBuffer = await fileBlob.arrayBuffer()
+        fileBytes = new Uint8Array(fileBuffer)
+        console.log('File retrieved successfully from storage, size:', fileBytes.length)
+      } catch (storageError) {
+        console.error('Error getting file from storage:', storageError)
+        throw new ConvexError(`Failed to get file from storage: ${storageError instanceof Error ? storageError.message : 'Unknown error'}`)
       }
-    }
-
-    const fileBuffer = await response.arrayBuffer()
-    const fileBytes = new Uint8Array(fileBuffer)
 
     // File download successful
 
@@ -181,6 +170,10 @@ export const parseSubject = action({
     return {
       subject: extractedData.subject,
       assessments: extractedData.assessments,
+    }
+    } catch (error) {
+      console.error('parseSubject handler error:', error)
+      throw new ConvexError(`parseSubject failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   },
 })

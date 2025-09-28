@@ -58,6 +58,50 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
     },
   })
 
+  // Test function to debug file upload step by step
+  const testFileUpload = async () => {
+    if (!uploadedFile || !(uploadedFile.file instanceof File)) {
+      console.log('No file selected or file is not a File object')
+      return
+    }
+
+    const file = uploadedFile.file
+    console.log('=== FILE UPLOAD DEBUG TEST ===')
+    console.log('File object:', file)
+    console.log('File properties:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+      isFile: file instanceof File
+    })
+
+    try {
+      console.log('Step 1: Testing generateUploadUrl...')
+      const uploadUrl = await generateUploadUrl()
+      console.log('Step 1 SUCCESS: Upload URL generated:', uploadUrl)
+
+      console.log('Step 2: Testing file upload...')
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+      console.log('Step 2 SUCCESS: Upload response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      console.log('Step 2 SUCCESS: Upload result:', result)
+      
+      console.log('=== FILE UPLOAD TEST COMPLETED SUCCESSFULLY ===')
+    } catch (error) {
+      console.error('=== FILE UPLOAD TEST FAILED ===', error)
+    }
+  }
+
   // Process PDF and automatically create subject and assessments
   const processPDF = async () => {
     if (!uploadedFile || !(uploadedFile.file instanceof File)) return
@@ -87,32 +131,56 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
         throw new Error('File type is invalid')
       }
 
-      // Upload file to Convex
-      const uploadUrl = await generateUploadUrl()
-      
-      // Ensure we're sending the file as binary data, not as a path
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': file.type,
-          'Content-Length': file.size.toString()
-        },
-        body: file,
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to upload file')
+      // Upload file to Convex using standard approach
+      try {
+        console.log('Starting file upload...', { fileName: file.name, fileSize: file.size, fileType: file.type })
+        
+        // Generate upload URL
+        const uploadUrl = await generateUploadUrl()
+        console.log('Upload URL generated:', uploadUrl)
+        
+        // Upload file using fetch
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
+        }
+        
+        const result = await response.json()
+        storageId = result.storageId as Id<'_storage'>
+        console.log('File upload successful:', { storageId })
+      } catch (uploadError) {
+        console.error('File upload failed:', uploadError)
+        throw new Error(`File upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown upload error'}`)
       }
-
-      const result = await response.json()
-      storageId = result.storageId as Id<'_storage'>
+      
       setProcessingStage('Extracting information...')
 
       // Parse the PDF content
       if (!storageId) {
         throw new Error('Failed to get storage ID')
       }
-      const parsed = await parseSubject({ fileId: storageId })
+      
+      let parsed
+      try {
+        console.log('Starting PDF parsing...', { storageId })
+        console.log('About to call parseSubject action...')
+        parsed = await parseSubject({ fileId: storageId })
+        console.log('PDF parsing successful:', { subjectName: parsed.subject.name, assessmentCount: parsed.assessments.length })
+      } catch (parseError) {
+        console.error('PDF parsing failed with detailed error:', {
+          error: parseError,
+          message: parseError instanceof Error ? parseError.message : 'Unknown error',
+          stack: parseError instanceof Error ? parseError.stack : undefined,
+          storageId
+        })
+        throw new Error(`PDF parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`)
+      }
+      
       setProcessingStage('Creating subject and assessments...')
 
       const assessments = parsed.assessments.map((assessment) => ({
@@ -121,7 +189,9 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
       }))
 
       // Automatically create subject with assessments
-      const createResult = await createSubjectWithAssessments({
+      try {
+        console.log('Creating subject with assessments...', { subjectName: parsed.subject.name, assessmentCount: assessments.length })
+        const createResult = await createSubjectWithAssessments({
         subject: {
           name: parsed.subject.name,
           code: parsed.subject.code || undefined,
@@ -132,7 +202,9 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
         },
         assessments,
       })
-
+      
+      console.log('Subject creation successful:', { subjectId: createResult.subjectId })
+      
       // Clean up and redirect
       setProcessingStage('Cleaning up...')
       await deleteFile({ fileId: storageId })
@@ -143,6 +215,10 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
         `Subject and ${assessments.length} assessment${assessments.length > 1 ? 's' : ''} have been created successfully.`,
       )
       router.push(`/subjects/${createResult.subjectId}`)
+      } catch (createError) {
+        console.error('Subject creation failed:', createError)
+        throw new Error(`Subject creation failed: ${createError instanceof Error ? createError.message : 'Unknown creation error'}`)
+      }
     } catch (e: any) {
       toast.error(e?.data || 'Failed to process PDF. Please try again or fill in manually.')
       setIsProcessing(false)
@@ -213,10 +289,15 @@ export const SubjectFormSheet = ({ button }: SubjectFormSheetProps) => {
                 onFilesChange={(files) => setUploadedFile(files[0])}
                 fileActions={(file) =>
                   !isProcessing && (
-                    <Button type="button" size="sm" variant="outline" onClick={processPDF} disabled={isProcessing}>
-                      <UploadIcon className="mr-1 size-3" />
-                      Create Subject
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button type="button" size="sm" variant="outline" onClick={testFileUpload}>
+                        Test Upload
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" onClick={processPDF} disabled={isProcessing}>
+                        <UploadIcon className="mr-1 size-3" />
+                        Create Subject
+                      </Button>
+                    </div>
                   )
                 }
               />

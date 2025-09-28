@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { mutation, query, action } from './_generated/server'
+import { mutation, query } from './_generated/server'
 
 /**
  * Convert Windows file path to file:// URL format
@@ -50,20 +50,6 @@ export const generateUploadUrl = mutation({
   },
 })
 
-/**
- * Upload a file with Windows path handling
- */
-export const uploadFile = action({
-  args: {
-    file: v.any(), // File object
-  },
-  returns: v.id('_storage'),
-  handler: async (ctx, args) => {
-    // Store the file in Convex storage
-    const storageId = await ctx.storage.store(args.file)
-    return storageId
-  },
-})
 
 /**
  * Get a file URL with Windows path conversion
