@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
-import { mutation, query } from './_generated/server'
+import { mutation, query, action } from './_generated/server'
+import { api } from './_generated/api'
 import { requireAuth } from './authHelpers'
 
 // =============================================================================
@@ -154,3 +155,188 @@ export const deleteEvent = mutation({
     return await ctx.db.delete(args.id)
   },
 })
+
+/**
+ * Import events from iCal URL (Action)
+ */
+export const importEventsFromICal = action({
+  args: {
+    icalUrl: v.string(),
+    calendarName: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean
+    importedCount: number
+    events: string[]
+  }> => {
+    // Get user ID from the action context
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new Error('Not authenticated')
+    }
+    
+    // Get user from database
+    const user = await ctx.runQuery(api.users.getCurrentUser)
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    try {
+      // Fetch iCal data
+      const normalizedUrl = args.icalUrl.replace(/^webcal:\/\//, 'https://')
+      const response = await fetch(normalizedUrl)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch iCal data: ${response.status} ${response.statusText}`)
+      }
+      
+      const icalData = await response.text()
+      
+      // Parse iCal data (simplified parser)
+      const events = parseICalData(icalData, args.calendarName || 'Imported Calendar')
+      
+      // Create events in database using mutation
+      const createdEvents: string[] = []
+      for (const event of events) {
+        const eventId: string = await ctx.runMutation(api.calendarEvents.createEvent, {
+          name: event.name,
+          description: event.description,
+          date: event.date,
+          time: event.time,
+        })
+        createdEvents.push(eventId)
+      }
+      
+      return {
+        success: true,
+        importedCount: createdEvents.length,
+        events: createdEvents,
+      }
+    } catch (error) {
+      console.error('Error importing iCal events:', error)
+      throw new Error(`Failed to import events: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  },
+})
+
+/**
+ * Enhanced iCal parser for server-side use
+ */
+function parseICalData(content: string, calendarName: string) {
+  const events: Array<{
+    name: string
+    description?: string
+    date: number
+    time?: string
+  }> = []
+  
+  const lines = content.split('\n').map(line => line.trim())
+  let currentEvent: any = {}
+  let inEvent = false
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    
+    // Handle line folding
+    let fullLine = line
+    while (i + 1 < lines.length && lines[i + 1].startsWith(' ')) {
+      i++
+      fullLine += lines[i].substring(1)
+    }
+    
+    if (fullLine === 'BEGIN:VEVENT') {
+      inEvent = true
+      currentEvent = {}
+      continue
+    }
+    
+    if (fullLine === 'END:VEVENT') {
+      if (inEvent && currentEvent.name && currentEvent.date) {
+        events.push(currentEvent)
+      }
+      inEvent = false
+      currentEvent = {}
+      continue
+    }
+    
+    if (!inEvent) continue
+    
+    // Parse event properties
+    if (fullLine.startsWith('SUMMARY:')) {
+      currentEvent.name = fullLine.substring('SUMMARY:'.length).replace(/\\,/g, ',')
+    } else if (fullLine.startsWith('DESCRIPTION:')) {
+      currentEvent.description = fullLine.substring('DESCRIPTION:'.length).replace(/\\,/g, ',').replace(/\\n/g, '\n')
+    } else if (fullLine.startsWith('LOCATION:')) {
+      currentEvent.location = fullLine.substring('LOCATION:'.length)
+    } else if (fullLine.startsWith('DTSTART')) {
+      const dateStr = extractDateFromProperty(fullLine)
+      if (dateStr) {
+        const date = parseICalDate(dateStr)
+        if (date) {
+          currentEvent.date = date.getTime()
+          if (dateStr.includes('T')) {
+            currentEvent.time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        }
+      }
+    }
+  }
+  
+  return events
+}
+
+function extractDateFromProperty(line: string): string | null {
+  const match = line.match(/DTSTART[^:]*:(.+)/)
+  return match ? match[1] : null
+}
+
+function parseICalDate(dateStr: string): Date | null {
+  try {
+    // Handle timezone-aware dates like "20250221T180000" with TZID
+    if (dateStr.length === 15 && dateStr.includes('T')) {
+      // YYYYMMDDTHHMMSS format (local time)
+      const year = parseInt(dateStr.substring(0, 4))
+      const month = parseInt(dateStr.substring(4, 6)) - 1
+      const day = parseInt(dateStr.substring(6, 8))
+      const hour = parseInt(dateStr.substring(9, 11))
+      const minute = parseInt(dateStr.substring(11, 13))
+      const second = parseInt(dateStr.substring(13, 15))
+      
+      return new Date(year, month, day, hour, minute, second)
+    } else if (dateStr.length === 8) {
+      // YYYYMMDD format
+      const year = parseInt(dateStr.substring(0, 4))
+      const month = parseInt(dateStr.substring(4, 6)) - 1
+      const day = parseInt(dateStr.substring(6, 8))
+      return new Date(year, month, day)
+    } else if (dateStr.length === 15 && dateStr.includes('T') && dateStr.endsWith('Z')) {
+      // YYYYMMDDTHHMMSSZ format (UTC)
+      const year = parseInt(dateStr.substring(0, 4))
+      const month = parseInt(dateStr.substring(4, 6)) - 1
+      const day = parseInt(dateStr.substring(6, 8))
+      const hour = parseInt(dateStr.substring(9, 11))
+      const minute = parseInt(dateStr.substring(11, 13))
+      const second = parseInt(dateStr.substring(13, 15))
+      
+      const date = new Date(year, month, day, hour, minute, second)
+      
+      // Handle UTC timezone (Z suffix)
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    } else if (dateStr.length === 16 && dateStr.includes('T')) {
+      // YYYYMMDDTHHMMSS format (local time)
+      const year = parseInt(dateStr.substring(0, 4))
+      const month = parseInt(dateStr.substring(4, 6)) - 1
+      const day = parseInt(dateStr.substring(6, 8))
+      const hour = parseInt(dateStr.substring(9, 11))
+      const minute = parseInt(dateStr.substring(11, 13))
+      const second = parseInt(dateStr.substring(13, 15))
+      
+      return new Date(year, month, day, hour, minute, second)
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error parsing iCal date:', dateStr, error)
+    return null
+  }
+}

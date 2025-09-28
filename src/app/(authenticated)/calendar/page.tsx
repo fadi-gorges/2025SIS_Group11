@@ -5,19 +5,25 @@ import { SimpleCalendar } from '@/components/calendar/simple-calendar'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import Heading from '@/components/page/heading'
 import { Button } from '@/components/ui/button'
-import { PlusIcon, CalendarIcon } from 'lucide-react'
+import { PlusIcon, CalendarIcon, DownloadIcon } from 'lucide-react'
 import { EventFormModal } from './_components/event-form-modal'
+import { ICalImportModal } from './_components/ical-import-modal'
 import { Doc } from '../../../../convex/_generated/dataModel'
 
 type CalendarEvent = Doc<'calendarEvents'>
 
 export default function CalendarPage() {
   const [showEventForm, setShowEventForm] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedEvents, setSelectedEvents] = useState<CalendarEvent[]>([])
 
   const handleAddEvent = () => {
     setShowEventForm(true)
+  }
+
+  const handleImportCalendar = () => {
+    setShowImportModal(true)
   }
 
   const handleDateSelect = (date: Date, events: CalendarEvent[]) => {
@@ -26,6 +32,11 @@ export default function CalendarPage() {
   }
 
   const handleEventCreated = () => {
+    // Events will automatically refresh due to Convex reactivity
+    // No manual refresh needed
+  }
+
+  const handleImportComplete = () => {
     // Events will automatically refresh due to Convex reactivity
     // No manual refresh needed
   }
@@ -40,6 +51,10 @@ export default function CalendarPage() {
             description="View your schedule and upcoming events" 
           />
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleImportCalendar}>
+              <DownloadIcon className="mr-2 h-4 w-4" />
+              Import Calendar
+            </Button>
             <Button variant="outline" size="sm">
               <CalendarIcon className="mr-2 h-4 w-4" />
               Export
@@ -82,6 +97,13 @@ export default function CalendarPage() {
           onOpenChange={setShowEventForm}
           selectedDate={selectedDate}
           onEventCreated={handleEventCreated}
+        />
+
+        {/* iCal Import Modal */}
+        <ICalImportModal
+          open={showImportModal}
+          onOpenChange={setShowImportModal}
+          onImportComplete={handleImportComplete}
         />
       </div>
     </SidebarPage>
