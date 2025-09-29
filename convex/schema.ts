@@ -71,7 +71,7 @@ export const weekFields = {
   startDate: v.number(),
   endDate: v.number(),
   isHoliday: v.boolean(),
-  current: v.optional(v.boolean()),
+  current: v.boolean(),
   userId: v.id('users'),
 } as const
 
