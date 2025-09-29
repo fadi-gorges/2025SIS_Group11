@@ -404,10 +404,42 @@ const TasksPage = () => {
   }, [filteredAndSortedTasks])
 
   const columns = [
-    { id: 'overdue', title: 'Over Due', tasks: tasksByColumn.overdue, color: 'text-red-600' },
-    { id: 'todo', title: 'To Do', tasks: tasksByColumn.todo, color: 'text-blue-600' },
-    { id: 'in_progress', title: 'In Progress', tasks: tasksByColumn.inProgress, color: 'text-amber-600' },
-    { id: 'done', title: 'Done', tasks: tasksByColumn.done, color: 'text-green-600' }
+    { 
+      id: 'overdue', 
+      title: 'Over Due', 
+      tasks: tasksByColumn.overdue, 
+      color: 'text-red-600',
+      bgColor: 'bg-red-50 dark:bg-red-950/20',
+      borderColor: 'border-red-200 dark:border-red-800',
+      icon: '⚠️'
+    },
+    { 
+      id: 'todo', 
+      title: 'To Do', 
+      tasks: tasksByColumn.todo, 
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 dark:bg-blue-950/20',
+      borderColor: 'border-blue-200 dark:border-blue-800',
+      icon: '📋'
+    },
+    { 
+      id: 'in_progress', 
+      title: 'In Progress', 
+      tasks: tasksByColumn.inProgress, 
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50 dark:bg-amber-950/20',
+      borderColor: 'border-amber-200 dark:border-amber-800',
+      icon: '⚡'
+    },
+    { 
+      id: 'done', 
+      title: 'Done', 
+      tasks: tasksByColumn.done, 
+      color: 'text-green-600',
+      bgColor: 'bg-green-50 dark:bg-green-950/20',
+      borderColor: 'border-green-200 dark:border-green-800',
+      icon: '✅'
+    }
   ]
 
   const getPriorityColor = (priority: TaskPriority) => {
@@ -669,51 +701,60 @@ const TasksPage = () => {
   return (
     <SidebarPage breadcrumb={[{ title: 'Tasks' }]}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <Heading title="Tasks" />
-          <Button onClick={handleCreateTask} className="flex items-center gap-2">
+          <Button 
+            onClick={handleCreateTask} 
+            className="flex items-center gap-2 w-full sm:w-auto h-11"
+            size="lg"
+          >
             <Plus className="h-4 w-4" />
-            Create Task
+            <span className="hidden xs:inline">Create Task</span>
+            <span className="xs:hidden">Create</span>
           </Button>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-card border rounded-lg">
-          <div className="flex-1">
+        {/* Enhanced Responsive Toolbar */}
+        <div className="flex flex-col gap-4 p-4 sm:p-6 bg-gradient-to-r from-card to-card/80 border rounded-xl shadow-sm">
+          {/* Search Bar - Full Width on Mobile */}
+          <div className="w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search tasks, subtasks, subjects, or descriptions..."
+                placeholder="Search tasks, subjects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11 border-2 focus:border-primary/50 transition-colors w-full"
               />
             </div>
           </div>
           
-          <Select value={selectedSubject || "all"} onValueChange={(value) => setSelectedSubject(value === "all" ? "" : value)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="All Subjects" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Subjects</SelectItem>
-              {subjects.map(subject => (
-                <SelectItem key={subject.code} value={subject.code}>
-                  {subject.code}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Filters - Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Select value={selectedSubject || "all"} onValueChange={(value) => setSelectedSubject(value === "all" ? "" : value)}>
+              <SelectTrigger className="w-full h-11 border-2 focus:border-primary/50 transition-colors">
+                <SelectValue placeholder="All Subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {subjects.map(subject => (
+                  <SelectItem key={subject.code} value={subject.code}>
+                    {subject.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={sortBy} onValueChange={(value: 'asc' | 'desc') => setSortBy(value)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="asc">Due Date (Ascending)</SelectItem>
-              <SelectItem value="desc">Due Date (Descending)</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={sortBy} onValueChange={(value: 'asc' | 'desc') => setSortBy(value)}>
+              <SelectTrigger className="w-full h-11 border-2 focus:border-primary/50 transition-colors">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="asc">Due Date ↑</SelectItem>
+                <SelectItem value="desc">Due Date ↓</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Kanban Board */}
@@ -724,22 +765,38 @@ const TasksPage = () => {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {/* Responsive Kanban Board */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {columns.map(column => (
-              <div key={column.id} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className={`font-semibold ${column.color}`}>{column.title}</h3>
-                  <Badge variant="secondary">{column.tasks.length}</Badge>
+              <div key={column.id} className="space-y-3 lg:space-y-4">
+                {/* Responsive Column Header */}
+                <div className={`flex items-center justify-between p-3 lg:p-4 rounded-lg ${column.bgColor} border ${column.borderColor}`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base lg:text-lg flex-shrink-0">{column.icon}</span>
+                    <h3 className={`font-semibold text-sm lg:text-base ${column.color} truncate`}>
+                      {column.title}
+                    </h3>
+                  </div>
+                  <Badge variant="secondary" className="bg-white/80 dark:bg-black/80 text-foreground font-medium text-xs lg:text-sm flex-shrink-0">
+                    {column.tasks.length}
+                  </Badge>
                 </div>
                 
+                {/* Responsive Droppable Column */}
                 <DroppableColumn
                   id={column.id}
-                  className="space-y-3 min-h-[200px] p-2 rounded-lg border-2 border-dashed border-muted-foreground/20 transition-colors hover:border-muted-foreground/40"
+                  className={`space-y-2 lg:space-y-3 min-h-[250px] lg:min-h-[300px] p-3 lg:p-4 rounded-xl border-2 border-dashed ${column.borderColor} transition-all duration-200 hover:border-solid hover:shadow-sm ${column.bgColor}`}
                 >
                   {column.tasks.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No tasks</p>
+                    <div className="text-center py-8 lg:py-12 text-muted-foreground">
+                      <div className="text-3xl lg:text-4xl mb-2 lg:mb-3 opacity-60">{column.icon}</div>
+                      <p className="text-xs lg:text-sm font-medium">No tasks yet</p>
+                      <p className="text-xs mt-1 opacity-75 hidden sm:block">
+                        {column.id === 'todo' && 'Create your first task to get started'}
+                        {column.id === 'in_progress' && 'Move tasks here when you start working'}
+                        {column.id === 'done' && 'Completed tasks will appear here'}
+                        {column.id === 'overdue' && 'Tasks past their due date'}
+                      </p>
                     </div>
                   ) : (
                     column.tasks.map(task => (
@@ -807,7 +864,7 @@ const TasksPage = () => {
   )
 }
 
-// Subtask Modal Component
+// Enhanced Subtask Modal Component
 const SubtaskModal = ({
   task,
   onClose,
@@ -823,27 +880,53 @@ const SubtaskModal = ({
   onDeleteSubtask: (taskId: string, subtaskId: string) => void
   onReorderSubtasks: (taskId: string, subtaskIds: string[]) => void
 }) => {
+  const completedSubtasks = task.subtasks?.filter(s => s.done).length || 0
+  const totalSubtasks = task.subtasks?.length || 0
+  const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background w-full max-w-2xl max-h-[80vh] rounded-lg shadow-lg overflow-hidden">
-        <div className="sticky top-0 bg-background border-b p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">{task.title}</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {task.subtasks && task.subtasks.length > 0 
-                  ? `${task.subtasks.filter(s => s.done).length}/${task.subtasks.length} subtasks complete`
-                  : 'No subtasks yet'
-                }
-              </p>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-background w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] rounded-xl shadow-2xl overflow-hidden border">
+        {/* Responsive Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-background to-background/95 border-b p-4 sm:p-6 backdrop-blur-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2 truncate">{task.title}</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <Badge variant="outline" className="text-xs">
+                    {task.subject}
+                  </Badge>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="sm:hidden block">Due {format(task.dueDate, 'MMM dd, yyyy')}</span>
+                  <span className="hidden sm:inline">Due {format(task.dueDate, 'MMM dd, yyyy')}</span>
+                </div>
+              </div>
+              
+              {/* Responsive Progress Bar */}
+              {totalSubtasks > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="font-medium">{completedSubtasks}/{totalSubtasks} complete</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5 sm:h-2 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="ghost" size="sm" onClick={onClose} className="hover:bg-muted/80 flex-shrink-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        {/* Responsive Content */}
+        <div className="p-4 sm:p-6 overflow-y-auto max-h-[65vh] sm:max-h-[60vh]">
           <SubtaskList
             taskId={task.id}
             subtasks={task.subtasks || []}
@@ -858,7 +941,7 @@ const SubtaskModal = ({
   )
 }
 
-// Droppable Column Component
+// Enhanced Droppable Column Component
 const DroppableColumn = ({ 
   id, 
   children, 
@@ -873,7 +956,11 @@ const DroppableColumn = ({
   return (
     <div
       ref={setNodeRef}
-      className={`${className} ${isOver ? 'border-primary/50 bg-primary/5' : ''}`}
+      className={`${className} transition-all duration-200 ${
+        isOver 
+          ? 'border-primary/60 bg-primary/10 scale-[1.02] shadow-lg' 
+          : 'hover:border-primary/30'
+      }`}
     >
       {children}
     </div>
@@ -922,6 +1009,10 @@ const TaskCard = ({
     return format(utcDate, 'MMM dd')
   }
 
+  const completedSubtasks = task.subtasks?.filter(s => s.done).length || 0
+  const totalSubtasks = task.subtasks?.length || 0
+  const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+
   return (
     <>
       <style jsx>{`
@@ -931,18 +1022,22 @@ const TaskCard = ({
           50% { transform: translateX(1px) translateY(1px); }
           75% { transform: translateX(-1px) translateY(1px); }
         }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
       `}</style>
       <Card 
         ref={setNodeRef}
         style={style}
-        className={`group cursor-grab active:cursor-grabbing ${
-          isDragging ? 'opacity-50' : ''
-        }`}
+        className={`group cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-lg hover:scale-[1.01] sm:hover:scale-[1.02] ${
+          isDragging ? 'opacity-50 rotate-1 sm:rotate-2' : ''
+        } ${isOverdue ? 'border-red-200 bg-red-50/50 dark:bg-red-950/10' : 'border-border'}`}
         {...attributes}
         {...listeners}
       >
       <CardContent 
-        className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="p-3 sm:p-4 lg:p-5 cursor-pointer hover:bg-muted/30 transition-all duration-200"
         onClick={(e) => {
           // Don't trigger click if clicking on dropdown, edit button, or their children
           if (!(e.target as HTMLElement).closest('[data-dropdown]') && 
@@ -951,34 +1046,51 @@ const TaskCard = ({
           }
         }}
       >
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${getPriorityColor(task.priority)}`} />
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full mt-1 sm:mt-1.5 flex-shrink-0 ${getPriorityColor(task.priority)} shadow-sm`} />
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm leading-tight mb-2 line-clamp-2">
+              <h4 className="font-semibold text-xs sm:text-sm leading-tight mb-2 sm:mb-3 line-clamp-2 group-hover:text-primary transition-colors">
                 {task.title}
               </h4>
               
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="text-xs">
+              <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
+                <Badge variant="outline" className="text-xs font-medium bg-background/80">
                   {task.subject}
                 </Badge>
+                {isOverdue && (
+                  <Badge variant="destructive" className="text-xs animate-pulse">
+                    Overdue
+                  </Badge>
+                )}
               </div>
               
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
-                  {formatDueDate(task.dueDate)}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2 sm:mb-3">
+                <Calendar className="h-3 w-3 flex-shrink-0" />
+                <span className={`truncate ${isOverdue ? 'text-red-600 font-medium' : ''}`}>
+                  Due {formatDueDate(task.dueDate)}
                 </span>
               </div>
               
-              {/* Subtask Progress */}
+              {/* Enhanced Responsive Subtask Progress */}
               {task.subtasks && task.subtasks.length > 0 && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
-                  <ListTodo className="h-3 w-3" />
-                  <span>
-                    {task.subtasks.filter(s => s.done).length}/{task.subtasks.length} complete
-                  </span>
+                <div className="space-y-1 sm:space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <ListTodo className="h-3 w-3 flex-shrink-0" />
+                      <span className="hidden sm:inline">Progress</span>
+                      <span className="sm:hidden">Prog</span>
+                    </div>
+                    <span className="font-medium flex-shrink-0">
+                      {completedSubtasks}/{totalSubtasks}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1 sm:h-1.5 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -989,18 +1101,18 @@ const TaskCard = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 w-7 sm:h-8 sm:w-8 p-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 hover:bg-muted/80 flex-shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit} data-edit-button>
-                Edit
+            <DropdownMenuContent align="end" className="w-40 sm:w-48">
+              <DropdownMenuItem onClick={onEdit} data-edit-button className="cursor-pointer text-xs sm:text-sm">
+                <span>Edit Task</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-red-600" data-edit-button>
-                Delete
+              <DropdownMenuItem onClick={onDelete} className="text-red-600 cursor-pointer text-xs sm:text-sm" data-edit-button>
+                <span>Delete Task</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1116,10 +1228,10 @@ const SubtaskList = ({
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
+      <div className="space-y-4">
+      {/* Enhanced Responsive Add new subtask */}
       <div className="space-y-3">
-      {/* Add new subtask */}
-      <div className="space-y-2">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Input
             value={newSubtaskTitle}
             onChange={(e) => {
@@ -1127,8 +1239,8 @@ const SubtaskList = ({
               setError('')
             }}
             onKeyPress={handleKeyPress}
-            placeholder="Add a subtask..."
-            className="flex-1"
+            placeholder="Add a new subtask..."
+            className="flex-1 h-10 sm:h-11 border-2 focus:border-primary/50 transition-colors"
             aria-label="Add new subtask"
           />
           <Button
@@ -1137,24 +1249,30 @@ const SubtaskList = ({
             onClick={handleAddSubtask}
             disabled={!newSubtaskTitle.trim()}
             aria-label="Add subtask"
+            className="h-10 sm:h-11 px-3 sm:px-4 bg-primary hover:bg-primary/90 transition-colors w-full sm:w-auto"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Add</span>
           </Button>
         </div>
         {error && (
-          <p className="text-xs text-red-500">{error}</p>
+          <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-2 rounded-md">
+            <X className="h-3 w-3" />
+            {error}
+          </div>
         )}
       </div>
 
-      {/* Subtasks list */}
+      {/* Enhanced Responsive Subtasks list */}
       {sortedSubtasks.length === 0 ? (
-        <div className="text-center py-6 text-muted-foreground">
-          <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No subtasks yet – add one to break down the work</p>
+        <div className="text-center py-8 sm:py-12 text-muted-foreground">
+          <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 opacity-60">📝</div>
+          <p className="text-xs sm:text-sm font-medium">No subtasks yet</p>
+          <p className="text-xs mt-1 opacity-75 hidden sm:block">Add subtasks to break down your work into manageable steps</p>
         </div>
       ) : (
         <SortableContext items={sortedSubtasks.map(s => s.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
+          <div className="space-y-2 sm:space-y-3">
             {sortedSubtasks.map((subtask) => (
               <SortableSubtaskItem
                 key={subtask.id}
@@ -1223,29 +1341,31 @@ const SortableSubtaskItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 p-2 rounded-md border bg-card"
+      className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-card transition-all duration-200 hover:shadow-sm ${
+        isDragging ? 'opacity-50 rotate-1' : ''
+      } ${subtask.done ? 'bg-muted/50' : ''}`}
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground"
+        className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
         aria-label="Drag to reorder"
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVertical className="h-3 w-3 sm:h-4 sm:w-4" />
       </button>
 
       <button
         type="button"
         onClick={() => onToggleComplete(subtask.id, !subtask.done)}
-        className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+        className={`w-4 h-4 sm:w-5 sm:h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 hover:scale-110 flex-shrink-0 ${
           subtask.done
-            ? 'bg-primary border-primary text-primary-foreground'
-            : 'border-muted-foreground hover:border-primary'
+            ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+            : 'border-muted-foreground hover:border-primary hover:bg-primary/10'
         }`}
         aria-label={subtask.done ? 'Mark as incomplete' : 'Mark as complete'}
       >
-        {subtask.done && <Check className="h-3 w-3" />}
+        {subtask.done && <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
       </button>
 
       {isEditing ? (
@@ -1254,13 +1374,13 @@ const SortableSubtaskItem = ({
           onChange={(e) => onEditTitleChange(e.target.value)}
           onKeyDown={onEditKeyPress}
           onBlur={onEditSave}
-          className="flex-1"
+          className="flex-1 h-7 sm:h-8 border-2 focus:border-primary/50 text-xs sm:text-sm"
           autoFocus
           aria-label="Edit subtask title"
         />
       ) : (
         <span
-          className={`flex-1 text-sm cursor-pointer ${
+          className={`flex-1 text-xs sm:text-sm cursor-pointer transition-colors hover:text-primary min-w-0 ${
             subtask.done ? 'line-through text-muted-foreground' : ''
           }`}
           onClick={() => onEditStart(subtask)}
@@ -1278,7 +1398,7 @@ const SortableSubtaskItem = ({
         </span>
       )}
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-shrink-0">
         {isEditing ? (
           <>
             <Button
@@ -1286,20 +1406,20 @@ const SortableSubtaskItem = ({
               size="sm"
               variant="ghost"
               onClick={onEditSave}
-              className="h-6 w-6 p-0"
+              className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
               aria-label="Save changes"
             >
-              <Check className="h-3 w-3" />
+              <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-600" />
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
               onClick={onEditCancel}
-              className="h-6 w-6 p-0"
+              className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
               aria-label="Cancel editing"
             >
-              <X className="h-3 w-3" />
+              <X className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600" />
             </Button>
           </>
         ) : (
@@ -1308,10 +1428,10 @@ const SortableSubtaskItem = ({
             size="sm"
             variant="ghost"
             onClick={() => onDelete(subtask.id)}
-            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            className="h-6 w-6 sm:h-7 sm:w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
             aria-label={`Delete subtask: ${subtask.title}`}
           >
-            <X className="h-3 w-3" />
+            <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </Button>
         )}
       </div>
@@ -1396,90 +1516,105 @@ const TaskFormSheet = ({
   const isPastDate = isBefore(formData.dueDate, startOfDay(new Date()))
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-end z-50">
-      <div className="bg-background w-full max-w-md h-full overflow-y-auto">
-        <div className="sticky top-0 bg-background border-b p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              {task ? 'Edit Task' : 'Create New Task'}
-            </h2>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              ×
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-end z-50">
+      <div className="bg-background w-full max-w-md h-full overflow-y-auto border-l shadow-2xl">
+        {/* Responsive Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-background to-background/95 border-b p-4 sm:p-6 backdrop-blur-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-semibold">
+                {task ? 'Edit Task' : 'Create New Task'}
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {task ? 'Update task details and subtasks' : 'Add a new task to your board'}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose} className="hover:bg-muted/80 flex-shrink-0">
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basics Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Basics</h3>
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+          {/* Enhanced Basics Section */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
+            </div>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Title *</label>
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Title *</label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Enter task title"
-                className={errors.title ? 'border-red-500' : ''}
+                className={`h-11 border-2 transition-colors ${errors.title ? 'border-red-500 focus:border-red-500' : 'focus:border-primary/50'}`}
               />
               {errors.title && (
-                <p className="text-xs text-red-500">{errors.title}</p>
+                <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-2 rounded-md">
+                  <X className="h-3 w-3" />
+                  {errors.title}
+                </div>
               )}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter task description"
-                className="w-full min-h-[80px] px-3 py-2 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full min-h-[100px] px-4 py-3 border-2 border-input rounded-lg resize-none focus:outline-none focus:border-primary/50 transition-colors bg-background"
               />
             </div>
           </div>
 
-          {/* Planning Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Planning</h3>
+          {/* Enhanced Planning Section */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
+              <h3 className="text-sm font-semibold text-foreground">Planning & Priority</h3>
+            </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-2 sm:space-y-3">
+                <label className="text-xs sm:text-sm font-medium text-foreground">Status</label>
                 <Select
                   value={formData.status}
                   onValueChange={(value: TaskStatus) => setFormData({ ...formData, status: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10 sm:h-11 border-2 focus:border-primary/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todo">To Do</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="done">Done</SelectItem>
+                    <SelectItem value="todo">📋 To Do</SelectItem>
+                    <SelectItem value="in_progress">⚡ In Progress</SelectItem>
+                    <SelectItem value="done">✅ Done</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Priority</label>
+              <div className="space-y-2 sm:space-y-3">
+                <label className="text-xs sm:text-sm font-medium text-foreground">Priority</label>
                 <Select
                   value={formData.priority}
                   onValueChange={(value: TaskPriority) => setFormData({ ...formData, priority: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10 sm:h-11 border-2 focus:border-primary/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="low">🟢 Low</SelectItem>
+                    <SelectItem value="medium">🟡 Medium</SelectItem>
+                    <SelectItem value="high">🔴 High</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Due Date</label>
+            <div className="space-y-2 sm:space-y-3">
+              <label className="text-xs sm:text-sm font-medium text-foreground">Due Date</label>
               {isClient && (
                 <Input
                   type="text"
@@ -1502,26 +1637,32 @@ const TaskFormSheet = ({
                     }
                   }}
                   placeholder="dd/mm/yyyy"
-                  className={isPastDate ? 'border-red-500' : ''}
+                  className={`h-10 sm:h-11 border-2 transition-colors ${isPastDate ? 'border-red-500 focus:border-red-500' : 'focus:border-primary/50'}`}
                 />
               )}
               {isPastDate && (
-                <p className="text-xs text-red-500">Due date is in the past</p>
+                <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-2 rounded-md">
+                  <X className="h-3 w-3" />
+                  Due date is in the past
+                </div>
               )}
             </div>
           </div>
 
-          {/* Categorisation Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Categorisation</h3>
+          {/* Enhanced Categorisation Section */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+              <h3 className="text-sm font-semibold text-foreground">Categorisation</h3>
+            </div>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Subject *</label>
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Subject *</label>
               <Select
                 value={formData.subject || "placeholder"}
                 onValueChange={(value) => setFormData({ ...formData, subject: value })}
               >
-                <SelectTrigger className={errors.subject ? 'border-red-500' : ''}>
+                <SelectTrigger className={`h-11 border-2 transition-colors ${errors.subject ? 'border-red-500 focus:border-red-500' : 'focus:border-primary/50'}`}>
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1534,15 +1675,73 @@ const TaskFormSheet = ({
                 </SelectContent>
               </Select>
               {errors.subject && (
-                <p className="text-xs text-red-500">{errors.subject}</p>
+                <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-2 rounded-md">
+                  <X className="h-3 w-3" />
+                  {errors.subject}
+                </div>
               )}
             </div>
           </div>
 
-          {/* Checklist Section */}
+          {/* Enhanced Checklist Section */}
           {task && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">Checklist</h3>
+            <div className="space-y-5">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                <h3 className="text-sm font-semibold text-foreground">Task Checklist</h3>
+              </div>
+              <SubtaskList
+                taskId={task.id}
+                subtasks={formData.subtasks}
+                onAddSubtask={onAddSubtask}
+                onUpdateSubtask={onUpdateSubtask}
+                onDeleteSubtask={onDeleteSubtask}
+                onReorderSubtasks={onReorderSubtasks}
+              />
+            </div>
+          )}
+
+          {/* Enhanced Categorisation Section */}
+          <div className="space-y-4 sm:space-y-5">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+              <h3 className="text-sm font-semibold text-foreground">Categorisation</h3>
+            </div>
+            
+            <div className="space-y-2 sm:space-y-3">
+              <label className="text-xs sm:text-sm font-medium text-foreground">Subject *</label>
+              <Select
+                value={formData.subject || "placeholder"}
+                onValueChange={(value) => setFormData({ ...formData, subject: value })}
+              >
+                <SelectTrigger className={`h-10 sm:h-11 border-2 transition-colors ${errors.subject ? 'border-red-500 focus:border-red-500' : 'focus:border-primary/50'}`}>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="placeholder" disabled>Select subject</SelectItem>
+                  {subjects.map(subject => (
+                    <SelectItem key={subject.code} value={subject.code}>
+                      {subject.code} - {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.subject && (
+                <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-2 rounded-md">
+                  <X className="h-3 w-3" />
+                  {errors.subject}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Enhanced Checklist Section */}
+          {task && (
+            <div className="space-y-4 sm:space-y-5">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                <h3 className="text-sm font-semibold text-foreground">Task Checklist</h3>
+              </div>
               <SubtaskList
                 taskId={task.id}
                 subtasks={formData.subtasks}
@@ -1555,15 +1754,18 @@ const TaskFormSheet = ({
           )}
         </form>
 
-        {/* Sticky Footer */}
-        <div className="sticky bottom-0 bg-background border-t p-6">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">* Required fields</p>
-            <div className="flex gap-3">
-              <Button variant="ghost" onClick={onClose}>
+        {/* Enhanced Responsive Sticky Footer */}
+        <div className="sticky bottom-0 bg-gradient-to-r from-background to-background/95 border-t p-4 sm:p-6 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1 h-4 bg-muted-foreground rounded-full"></div>
+              <span>* Required fields</span>
+            </div>
+            <div className="flex gap-2 sm:gap-3">
+              <Button variant="ghost" onClick={onClose} className="hover:bg-muted/80 transition-colors flex-1 sm:flex-none">
                 Cancel
               </Button>
-              <Button onClick={handleSubmit}>
+              <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 transition-colors flex-1 sm:flex-none">
                 {task ? 'Update Task' : 'Create Task'}
               </Button>
             </div>
