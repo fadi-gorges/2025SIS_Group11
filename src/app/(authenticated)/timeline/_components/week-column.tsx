@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import { Doc } from '../../../../../convex/_generated/dataModel'
 import TaskFormSheet from '../../tasks/_components/task-form-sheet'
+import TaskDialog from './task-dialog'
 import TaskItem from './task-item'
 import WeekFormDialog from './week-form-dialog'
 
@@ -38,6 +39,8 @@ type WeekColumnProps = {
 const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
 
   const startWeek = useMutation(api.weeks.startWeek)
   const deleteWeek = useMutation(api.weeks.deleteWeek)
@@ -57,6 +60,11 @@ const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
   const onDeleteWeek = async () => {
     await deleteWeek({ weekId: week._id })
     setIsDeleteDialogOpen(false)
+  }
+
+  const handleTaskClick = (task: Doc<'tasks'>) => {
+    setSelectedTaskId(task._id)
+    setIsTaskDialogOpen(true)
   }
 
   return (
@@ -144,7 +152,14 @@ const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
         <Separator />
         <CardContent className="space-y-2 py-3">
           {tasks && tasks.length > 0 ? (
-            tasks.map((t) => <TaskItem key={t._id} task={t} subject={subjects.find((s) => s._id === t.subjectId)} />)
+            tasks.map((t) => (
+              <TaskItem
+                key={t._id}
+                task={t}
+                subject={subjects.find((s) => s._id === t.subjectId)}
+                onClick={handleTaskClick}
+              />
+            ))
           ) : (
             <div className="text-muted-foreground grid place-items-center rounded-md border border-dashed py-8 text-sm">
               <ListTodoIcon className="mb-2 size-5" />
@@ -165,6 +180,8 @@ const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
       </Card>
 
       <WeekFormDialog open={isEditOpen} onOpenChange={setIsEditOpen} isHoliday={week.isHoliday} weekToEdit={week} />
+
+      <TaskDialog taskId={selectedTaskId} open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

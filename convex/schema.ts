@@ -87,6 +87,12 @@ export const taskFields = {
   status: v.union(...taskStatus.map((status) => v.literal(status))),
   priority: v.union(...taskPriority.map((priority) => v.literal(priority))),
   reminderTime: v.optional(v.number()),
+  subtasks: v.array(
+    v.object({
+      name: v.string(),
+      done: v.boolean(),
+    }),
+  ),
   userId: v.id('users'),
   subjectId: v.optional(v.id('subjects')),
   assessmentId: v.optional(v.id('assessments')),

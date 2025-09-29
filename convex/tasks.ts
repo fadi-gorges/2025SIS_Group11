@@ -40,6 +40,7 @@ export const createTask = mutation({
     return await ctx.db.insert('tasks', {
       ...validation.data,
       type: 'task',
+      subtasks: [],
       userId,
       subjectId: validation.data.subjectId as Id<'subjects'>,
       assessmentId: undefined,
@@ -267,7 +268,7 @@ export const updateTask = mutation({
 
     await ctx.db.patch(args.taskId, {
       ...validation.data,
-      weekId: validation.data as Id<'weeks'>,
+      weekId: validation.data.weekId as Id<'weeks'>,
       subjectId: task.assessmentId ? task.subjectId : (validation.data.subjectId as Id<'subjects'>),
       assessmentId: task.assessmentId,
     })
@@ -348,7 +349,7 @@ export const batchUpdateTasks = mutation({
 
         await ctx.db.patch(taskId, updateData)
         updatedCount++
-      } catch (error) {
+      } catch {
         // Skip tasks that don't belong to the user
         continue
       }
@@ -377,7 +378,7 @@ export const batchDeleteTasks = mutation({
         await requireAuthAndOwnership(ctx, taskId)
         await ctx.db.delete(taskId)
         deletedCount++
-      } catch (error) {
+      } catch {
         // Skip tasks that don't belong to the user or don't exist
         continue
       }
@@ -408,6 +409,7 @@ export const cloneTask = mutation({
       status: 'todo' as const, // Reset status for cloned task
       priority: originalTask.priority,
       reminderTime: originalTask.reminderTime,
+      subtasks: originalTask.subtasks,
       userId,
       subjectId: originalTask.subjectId,
       assessmentId: originalTask.assessmentId,
@@ -451,6 +453,27 @@ export const autoAssignTaskToWeek = mutation({
     }
 
     return null // No appropriate week found
+  },
+})
+
+/**
+ * Update task subtasks
+ */
+export const updateTaskSubtasks = mutation({
+  args: {
+    taskId: v.id('tasks'),
+    subtasks: v.array(
+      v.object({
+        name: v.string(),
+        done: v.boolean(),
+      }),
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuthAndOwnership(ctx, args.taskId)
+    await ctx.db.patch(args.taskId, { subtasks: args.subtasks })
+    return null
   },
 })
 

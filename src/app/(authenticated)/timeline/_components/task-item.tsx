@@ -12,9 +12,10 @@ type TaskItemProps = {
   subject?: { name: string; code?: string } | null
   selected?: boolean
   onToggle?: (selected: boolean) => void
+  onClick?: (task: Doc<'tasks'>) => void
 }
 
-const TaskItem = ({ task, subject, selected = false, onToggle }: TaskItemProps) => {
+const TaskItem = ({ task, subject, selected = false, onToggle, onClick }: TaskItemProps) => {
   const [hover, setHover] = useState(false)
 
   // Format due date to show day and month
@@ -29,11 +30,12 @@ const TaskItem = ({ task, subject, selected = false, onToggle }: TaskItemProps) 
   return (
     <div
       className={cn(
-        'group bg-card hover:bg-accent/50 relative rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow]',
+        'group bg-card hover:bg-accent/50 relative cursor-pointer rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow]',
         selected && 'ring-primary ring-2',
       )}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
+      onClick={() => onClick?.(task)}
     >
       <button
         className={cn(

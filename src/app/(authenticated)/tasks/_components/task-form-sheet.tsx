@@ -102,7 +102,7 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
           taskId: taskToEdit._id,
           name: data.name,
           description: data.description || undefined,
-          weekId: data.weekId ? (data.weekId as Id<'weeks'>) : undefined,
+          weekId: data.weekId && data.weekId !== 'unassigned' ? (data.weekId as Id<'weeks'>) : undefined,
           dueDate: data.dueDate,
           status: data.status,
           priority: data.priority,
@@ -114,7 +114,7 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
         await createTask({
           name: data.name,
           description: data.description || undefined,
-          weekId: data.weekId ? (data.weekId as Id<'weeks'>) : undefined,
+          weekId: data.weekId && data.weekId !== 'unassigned' ? (data.weekId as Id<'weeks'>) : undefined,
           dueDate: data.dueDate,
           status: data.status,
           priority: data.priority,
@@ -209,7 +209,7 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full max-w-sm p-0" align="end">
+                    <PopoverContent className="w-full max-w-sm p-0" align="start">
                       <Command>
                         <CommandList>
                           <CommandGroup>
@@ -267,7 +267,7 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full max-w-sm p-0" align="end">
+                    <PopoverContent className="w-full max-w-sm p-0" align="start">
                       <Command>
                         <CommandList>
                           <CommandGroup>
@@ -325,7 +325,7 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full max-w-sm p-0" align="end">
+                    <PopoverContent className="w-full max-w-sm p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Search weeks..." />
                         <CommandList>
@@ -397,7 +397,7 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full max-w-sm p-0" align="end">
+                    <PopoverContent className="w-full max-w-sm p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Search subjects..." />
                         <CommandList>

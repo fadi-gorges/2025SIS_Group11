@@ -202,6 +202,12 @@ export const taskDescriptionSchema = z
 export const taskStatusSchema = z.enum(taskStatus)
 export const taskPrioritySchema = z.enum(taskPriority)
 export const taskTypeSchema = z.enum(taskType)
+export const taskSubtasksSchema = z.array(
+  z.object({
+    name: z.string(),
+    done: z.boolean(),
+  }),
+)
 
 /**
  * Week validation schemas
@@ -329,8 +335,9 @@ export const taskSchema = z.object({
   reminderTime: z.number().optional(),
   subjectId: z.string().optional(),
   assessmentId: z.string().optional(),
+  subtasks: taskSubtasksSchema,
 })
-export const taskFormSchema = taskSchema.omit({ type: true, assessmentId: true })
+export const taskFormSchema = taskSchema.omit({ type: true, assessmentId: true, subtasks: true })
 
 // Export types for TypeScript
 export type LoginData = z.infer<typeof loginSchema>
