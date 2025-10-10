@@ -37,10 +37,20 @@ export const createTask = mutation({
       await requireAuthAndOwnership(ctx, validation.data.subjectId as Id<'subjects'>) // subjectId validation
     }
 
+    // Get the maximum order for this user's tasks
+    const maxOrderTask = await ctx.db
+      .query('tasks')
+      .withIndex('by_user_and_order', (q) => q.eq('userId', userId))
+      .order('desc')
+      .first()
+
+    const newOrder = maxOrderTask ? maxOrderTask.order + 1 : 0
+
     return await ctx.db.insert('tasks', {
       ...validation.data,
       type: 'task',
       subtasks: [],
+      order: newOrder,
       userId,
       subjectId: validation.data.subjectId as Id<'subjects'>,
       assessmentId: undefined,
@@ -400,6 +410,15 @@ export const cloneTask = mutation({
   handler: async (ctx, args) => {
     const { data: originalTask, userId } = await requireAuthAndOwnership(ctx, args.taskId)
 
+    // Get the maximum order for this user's tasks
+    const maxOrderTask = await ctx.db
+      .query('tasks')
+      .withIndex('by_user_and_order', (q) => q.eq('userId', userId))
+      .order('desc')
+      .first()
+
+    const newOrder = maxOrderTask ? maxOrderTask.order + 1 : 0
+
     const clonedTaskData = {
       name: args.name || `${originalTask.name} (Copy)`,
       type: originalTask.type,
@@ -410,6 +429,7 @@ export const cloneTask = mutation({
       priority: originalTask.priority,
       reminderTime: originalTask.reminderTime,
       subtasks: originalTask.subtasks,
+      order: newOrder,
       userId,
       subjectId: originalTask.subjectId,
       assessmentId: originalTask.assessmentId,
@@ -510,5 +530,107 @@ export const getTasksSummary = query({
       doneTasks,
       overdueTasks,
     }
+  },
+})
+
+/**
+ * Get tasks for the current week (for kanban board)
+ */
+export const getTasksForCurrentWeekKanban = query({
+  args: {},
+  returns: v.union(
+    v.object({
+      currentWeek: v.object({
+        _id: v.id('weeks'),
+        _creationTime: v.number(),
+        name: v.string(),
+        startDate: v.number(),
+        endDate: v.number(),
+        isHoliday: v.boolean(),
+        current: v.boolean(),
+        userId: v.id('users'),
+      }),
+      tasks: v.array(taskObject),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx)
+
+    // Find the current week
+    const currentWeek = await ctx.db
+      .query('weeks')
+      .withIndex('by_user_and_current', (q) => q.eq('userId', userId).eq('current', true))
+      .first()
+
+    if (!currentWeek) {
+      return null
+    }
+
+    // Get tasks for the current week, ordered by their order field
+    const tasks = await ctx.db
+      .query('tasks')
+      .withIndex('by_user_and_week', (q) => q.eq('userId', userId).eq('weekId', currentWeek._id))
+      .collect()
+
+    // Sort by order
+    const sortedTasks = tasks.sort((a, b) => a.order - b.order)
+
+    return {
+      currentWeek,
+      tasks: sortedTasks,
+    }
+  },
+})
+
+/**
+ * Update task order and status (for kanban drag and drop)
+ */
+export const updateTaskOrderAndStatus = mutation({
+  args: {
+    taskId: v.id('tasks'),
+    newStatus: taskFields.status,
+    newOrder: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuthAndOwnership(ctx, args.taskId)
+
+    await ctx.db.patch(args.taskId, {
+      status: args.newStatus,
+      order: args.newOrder,
+    })
+
+    return null
+  },
+})
+
+/**
+ * Reorder multiple tasks
+ */
+export const reorderTasks = mutation({
+  args: {
+    taskIds: v.array(v.id('tasks')),
+    startOrder: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuth(ctx)
+
+    // Update each task with its new order
+    for (let i = 0; i < args.taskIds.length; i++) {
+      const taskId = args.taskIds[i]
+
+      // Verify ownership
+      try {
+        await requireAuthAndOwnership(ctx, taskId)
+        await ctx.db.patch(taskId, { order: args.startOrder + i })
+      } catch {
+        // Skip tasks that don't belong to the user
+        continue
+      }
+    }
+
+    return null
   },
 })

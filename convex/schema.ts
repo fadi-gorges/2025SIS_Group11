@@ -93,6 +93,7 @@ export const taskFields = {
       done: v.boolean(),
     }),
   ),
+  order: v.number(),
   userId: v.id('users'),
   subjectId: v.optional(v.id('subjects')),
   assessmentId: v.optional(v.id('assessments')),
@@ -189,5 +190,6 @@ export default defineSchema({
     .index('by_subject', ['subjectId'])
     .index('by_assessment', ['assessmentId'])
     .index('by_due_date', ['dueDate'])
+    .index('by_user_and_order', ['userId', 'order'])
     .searchIndex('search_name', { searchField: 'name', filterFields: ['userId'] }),
 })

@@ -261,6 +261,9 @@ export const startWeek = mutation({
 
       // Move all tasks to the new week
       for (const task of pastWeekTasks) {
+        if (task.status === 'done') {
+          continue
+        }
         await ctx.db.patch(task._id, { weekId: args.weekId })
         tasksMovedCount++
       }
