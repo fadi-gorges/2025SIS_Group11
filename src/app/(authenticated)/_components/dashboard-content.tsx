@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Preloaded, usePreloadedQuery } from 'convex/react'
-import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, FileTextIcon } from 'lucide-react'
+import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, FileTextIcon, KanbanSquareIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { api } from '../../../../convex/_generated/api'
@@ -55,6 +55,24 @@ const PriorityBadge = ({ priority }: { priority: Doc<'tasks'>['priority'] }) => 
   const p = map[priority]
   return <Badge variant={p.variant}>{p.label}</Badge>
 }
+
+const EmptyState = ({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ElementType
+  title: string
+  description?: string
+}) => (
+  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+    <div className="bg-muted/50 mb-4 rounded-full p-3">
+      <Icon className="text-muted-foreground h-6 w-6" />
+    </div>
+    <h3 className="mb-1 font-medium">{title}</h3>
+    {description && <p className="text-muted-foreground text-sm">{description}</p>}
+  </div>
+)
 
 const DashboardContent = ({
   preloadedSubjects,
@@ -136,7 +154,11 @@ const DashboardContent = ({
             <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-4">
                 {upcoming.length === 0 ? (
-                  <div className="text-muted-foreground text-center text-sm">No upcoming assessments</div>
+                  <EmptyState
+                    icon={FileTextIcon}
+                    title="No upcoming assessments"
+                    description="Create assessments to track your deadlines and progress"
+                  />
                 ) : (
                   upcoming.map((a) => {
                     const subject = subjectMap[a.subjectId]
@@ -196,7 +218,11 @@ const DashboardContent = ({
               {(['todo', 'doing', 'done'] as const).map((status) => (
                 <TabsContent key={status} value={status} className="space-y-3">
                   {!tasksByStatus[status]?.length ? (
-                    <div className="text-muted-foreground text-sm">No tasks here.</div>
+                    <EmptyState
+                      icon={KanbanSquareIcon}
+                      title={`No ${status === 'todo' ? 'pending' : status === 'doing' ? 'active' : 'completed'} tasks`}
+                      description="Tasks will appear here as you create them"
+                    />
                   ) : (
                     tasksByStatus[status]?.map((t) => {
                       const a = t.assessmentId ? assessmentMap[t.assessmentId] : undefined
@@ -240,7 +266,11 @@ const DashboardContent = ({
           <CardContent className="space-y-4">
             <div className="space-y-3">
               {grades.length === 0 ? (
-                <div className="text-muted-foreground text-sm">No grades yet</div>
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="No grades yet"
+                  description="Your grades will appear here once they're recorded"
+                />
               ) : (
                 grades.slice(0, 5).map((g) => {
                   const a = g.assessmentId ? assessmentMap[g.assessmentId] : undefined
@@ -298,7 +328,11 @@ const DashboardContent = ({
           <CardContent>
             <div className="space-y-4">
               {subjects.length === 0 ? (
-                <div className="text-muted-foreground text-sm">No subjects yet</div>
+                <EmptyState
+                  icon={BookOpen}
+                  title="No subjects yet"
+                  description="Add your subjects to start organizing your study plan"
+                />
               ) : (
                 subjects.map((s) => {
                   const subjectAssessments = assessments.filter((a) => a.subjectId === s._id)

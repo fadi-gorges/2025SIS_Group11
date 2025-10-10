@@ -287,7 +287,6 @@ const TaskDialog = ({ taskId, open, onOpenChange }: TaskDialogProps) => {
       setSubtasks(newSubtasks)
       await updateTaskSubtasks({ taskId: task._id, subtasks: newSubtasks })
       addSubtaskForm.reset({ name: '' })
-      toast.success('Subtask added successfully')
     } catch {
       toast.error('Failed to add subtask')
     }
@@ -298,7 +297,6 @@ const TaskDialog = ({ taskId, open, onOpenChange }: TaskDialogProps) => {
 
     try {
       await deleteTask({ taskId: task._id })
-      toast.success('Task deleted successfully')
       setIsDeleteDialogOpen(false)
       onOpenChange(false)
     } catch (e: any) {

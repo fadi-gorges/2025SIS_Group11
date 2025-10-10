@@ -109,7 +109,6 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
           reminderTime: data.reminderTime,
           subjectId: data.subjectId ? (data.subjectId as Id<'subjects'>) : undefined,
         })
-        toast.success('Task updated successfully')
       } else {
         await createTask({
           name: data.name,
@@ -121,7 +120,6 @@ export const TaskFormSheet = ({ children, weekId, taskToEdit }: TaskFormSheetPro
           reminderTime: data.reminderTime,
           subjectId: data.subjectId ? (data.subjectId as Id<'subjects'>) : undefined,
         })
-        toast.success('Task created successfully')
       }
 
       setOpen(false)
