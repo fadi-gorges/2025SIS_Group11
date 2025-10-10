@@ -1,23 +1,18 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils/cn'
 import { taskPriorityMap, taskStatusMap, taskTypeMap } from '@/lib/utils/task-utils'
-import { BookIcon, CalendarIcon, CheckSquareIcon, SquareIcon } from 'lucide-react'
-import React, { useState } from 'react'
+import { BookIcon, CalendarIcon } from 'lucide-react'
+import React from 'react'
 import { Doc } from '../../../../../convex/_generated/dataModel'
 
 type TaskItemProps = {
   task: Doc<'tasks'>
   subject?: { name: string; code?: string } | null
-  selected?: boolean
-  onToggle?: (selected: boolean) => void
   onClick?: (task: Doc<'tasks'>) => void
 }
 
-const TaskItem = ({ task, subject, selected = false, onToggle, onClick }: TaskItemProps) => {
-  const [hover, setHover] = useState(false)
-
+const TaskItem = ({ task, subject, onClick }: TaskItemProps) => {
   // Format due date to show day and month
   const formatDueDate = (timestamp: number) => {
     const date = new Date(timestamp)
@@ -29,26 +24,10 @@ const TaskItem = ({ task, subject, selected = false, onToggle, onClick }: TaskIt
 
   return (
     <div
-      className={cn(
-        'group bg-card hover:bg-accent/50 relative cursor-pointer rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow]',
-        selected && 'ring-primary ring-2',
-      )}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      className="group bg-card hover:bg-accent/50 relative cursor-pointer rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow]"
       onClick={() => onClick?.(task)}
     >
-      <button
-        className={cn(
-          'absolute top-2 left-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100',
-          (hover || selected) && 'opacity-100',
-        )}
-        onClick={() => onToggle?.(!selected)}
-        aria-label={selected ? 'Deselect' : 'Select'}
-      >
-        {selected ? <CheckSquareIcon className="size-4" /> : <SquareIcon className="size-4" />}
-      </button>
-
-      <div className="pl-6">
+      <div>
         {/* Horizontal inline layout */}
         <div className="flex items-center gap-3 text-sm">
           {/* Task/Assessment Icon */}

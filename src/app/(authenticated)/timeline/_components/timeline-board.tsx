@@ -1,5 +1,6 @@
 'use client'
 
+import UnassignedTasksColumn from '@/app/(authenticated)/timeline/_components/unassigned-tasks-column'
 import WeekColumn from '@/app/(authenticated)/timeline/_components/week-column'
 import WeekFormDialog from '@/app/(authenticated)/timeline/_components/week-form-dialog'
 import SearchInput from '@/components/extensions/search-input'
@@ -24,6 +25,9 @@ const TimelineBoard = ({ preloadedWeeks, preloadedTasks, preloadedSubjects }: Ti
     mode: 'create'
     isHoliday: boolean
   } | null>(null)
+
+  // Filter unassigned tasks (tasks without a weekId)
+  const unassignedTasks = tasks.filter((task) => !task.weekId)
 
   return (
     <div className="flex h-full flex-1 flex-col gap-4">
@@ -58,6 +62,9 @@ const TimelineBoard = ({ preloadedWeeks, preloadedTasks, preloadedSubjects }: Ti
                 subjects={subjects}
               />
             ))}
+
+            {/* Unassigned Tasks Section - Always Visible */}
+            <UnassignedTasksColumn tasks={unassignedTasks} subjects={subjects} />
           </div>
         )}
       </div>
