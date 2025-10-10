@@ -135,6 +135,37 @@ export const getTasksByUser = query({
 })
 
 /**
+ * Get all tasks for a user ordered by order field (for timeline drag and drop)
+ */
+export const getTasksForTimeline = query({
+  args: {
+    search: v.optional(v.string()),
+  },
+  returns: v.array(taskObject),
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+    const { search } = args
+
+    const hasSearch = !!search && search.trim().length > 0
+
+    let results
+    if (hasSearch) {
+      // Use search index for name search
+      results = ctx.db
+        .query('tasks')
+        .withSearchIndex('search_name', (q) => q.search('name', search!.trim()).eq('userId', userId))
+    } else {
+      results = ctx.db.query('tasks').withIndex('by_user', (q) => q.eq('userId', userId))
+    }
+
+    const tasks = await results.collect()
+
+    // Sort by order field
+    return tasks.sort((a, b) => a.order - b.order)
+  },
+})
+
+/**
  * Get tasks by week
  */
 export const getTasksByWeek = query({
@@ -594,6 +625,33 @@ export const reorderTasks = mutation({
         continue
       }
     }
+
+    return null
+  },
+})
+
+/**
+ * Update task week and order (for timeline drag and drop)
+ */
+export const updateTaskWeekAndOrder = mutation({
+  args: {
+    taskId: v.id('tasks'),
+    weekId: v.optional(v.id('weeks')),
+    newOrder: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuthAndOwnership(ctx, args.taskId)
+
+    // Validate week ownership if weekId is provided
+    if (args.weekId) {
+      await requireAuthAndOwnership(ctx, args.weekId)
+    }
+
+    await ctx.db.patch(args.taskId, {
+      weekId: args.weekId,
+      order: args.newOrder,
+    })
 
     return null
   },

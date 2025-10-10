@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils/cn'
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { InboxIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Doc } from '../../../../../convex/_generated/dataModel'
@@ -21,10 +24,17 @@ const UnassignedTasksColumn = ({ tasks, subjects }: UnassignedTasksColumnProps) 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
 
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'unassigned-column',
+  })
+
   const totalTasks = tasks?.length
   const todoTasks = tasks?.filter((task) => task.status === 'todo').length
   const doingTasks = tasks?.filter((task) => task.status === 'doing').length
   const doneTasks = tasks?.filter((task) => task.status === 'done').length
+
+  // Sort tasks by order
+  const sortedTasks = tasks.sort((a, b) => a.order - b.order)
 
   const handleTaskClick = (task: Doc<'tasks'>) => {
     setSelectedTaskId(task._id)
@@ -33,7 +43,13 @@ const UnassignedTasksColumn = ({ tasks, subjects }: UnassignedTasksColumnProps) 
 
   return (
     <div className="w-full">
-      <Card className="border-muted-foreground/30 border-2 border-dashed">
+      <Card
+        ref={setNodeRef}
+        className={cn(
+          'border-muted-foreground/30 border-2 border-dashed transition-colors',
+          isOver && 'border-primary/60 bg-accent/30',
+        )}
+      >
         <CardHeader className="space-y-1">
           <CardTitle className="flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -63,21 +79,23 @@ const UnassignedTasksColumn = ({ tasks, subjects }: UnassignedTasksColumnProps) 
         </CardHeader>
         <Separator />
         <CardContent className="space-y-2 py-3">
-          {tasks && tasks.length > 0 ? (
-            tasks.map((t) => (
-              <TaskItem
-                key={t._id}
-                task={t}
-                subject={subjects.find((s) => s._id === t.subjectId)}
-                onClick={handleTaskClick}
-              />
-            ))
-          ) : (
-            <div className="text-muted-foreground grid place-items-center rounded-md border border-dashed py-8 text-sm">
-              <ListTodoIcon className="mb-2 size-5" />
-              All tasks are assigned to weeks
-            </div>
-          )}
+          <SortableContext items={sortedTasks.map((t) => t._id)} strategy={verticalListSortingStrategy}>
+            {sortedTasks && sortedTasks.length > 0 ? (
+              sortedTasks.map((t) => (
+                <TaskItem
+                  key={t._id}
+                  task={t}
+                  subject={subjects.find((s) => s._id === t.subjectId)}
+                  onClick={handleTaskClick}
+                />
+              ))
+            ) : (
+              <div className="text-muted-foreground grid place-items-center rounded-md border border-dashed py-8 text-sm">
+                <ListTodoIcon className="mb-2 size-5" />
+                All tasks are assigned to weeks
+              </div>
+            )}
+          </SortableContext>
 
           {/* Task Creation Component */}
           <div className="mt-2">

@@ -2,6 +2,8 @@
 
 import { Badge } from '@/components/ui/badge'
 import { taskPriorityMap, taskStatusMap, taskTypeMap } from '@/lib/utils/task-utils'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { BookIcon, CalendarIcon } from 'lucide-react'
 import React from 'react'
 import { Doc } from '../../../../../convex/_generated/dataModel'
@@ -13,6 +15,16 @@ type TaskItemProps = {
 }
 
 const TaskItem = ({ task, subject, onClick }: TaskItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task._id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
   // Format due date to show day and month
   const formatDueDate = (timestamp: number) => {
     const date = new Date(timestamp)
@@ -24,7 +36,11 @@ const TaskItem = ({ task, subject, onClick }: TaskItemProps) => {
 
   return (
     <div
-      className="group bg-card hover:bg-accent/50 relative cursor-pointer rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow]"
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="group bg-card hover:bg-accent/50 relative cursor-grab rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow] active:cursor-grabbing"
       onClick={() => onClick?.(task)}
     >
       <div>
