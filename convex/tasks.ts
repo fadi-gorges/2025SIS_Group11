@@ -498,42 +498,6 @@ export const updateTaskSubtasks = mutation({
 })
 
 /**
- * Get tasks summary for dashboard
- */
-export const getTasksSummary = query({
-  args: {},
-  returns: v.object({
-    totalTasks: v.number(),
-    todoTasks: v.number(),
-    doingTasks: v.number(),
-    doneTasks: v.number(),
-    overdueTasks: v.number(),
-  }),
-  handler: async (ctx) => {
-    const userId = await requireAuth(ctx)
-    const now = Date.now()
-
-    const tasks = await ctx.db
-      .query('tasks')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .collect()
-
-    const todoTasks = tasks.filter((task) => task.status === 'todo').length
-    const doingTasks = tasks.filter((task) => task.status === 'doing').length
-    const doneTasks = tasks.filter((task) => task.status === 'done').length
-    const overdueTasks = tasks.filter((task) => task.dueDate && task.dueDate < now && task.status !== 'done').length
-
-    return {
-      totalTasks: tasks.length,
-      todoTasks,
-      doingTasks,
-      doneTasks,
-      overdueTasks,
-    }
-  },
-})
-
-/**
  * Get tasks for the current week (for kanban board)
  */
 export const getTasksForCurrentWeekKanban = query({

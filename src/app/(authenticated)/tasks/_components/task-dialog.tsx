@@ -65,7 +65,7 @@ import { z } from 'zod'
 import { api } from '../../../../../convex/_generated/api'
 import { Id } from '../../../../../convex/_generated/dataModel'
 import { VALIDATION_LIMITS, taskNameSchema } from '../../../../../convex/validation'
-import TaskFormSheet from '../../tasks/_components/task-form-sheet'
+import TaskFormSheet from './task-form-sheet'
 
 // Form schemas
 const addSubtaskSchema = z.object({

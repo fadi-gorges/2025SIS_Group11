@@ -10,7 +10,7 @@ import { format } from 'date-fns'
 import { BookIcon, CalendarIcon } from 'lucide-react'
 import React, { useState } from 'react'
 import { Doc } from '../../../../../convex/_generated/dataModel'
-import TaskDialog from '../../timeline/_components/task-dialog'
+import TaskDialog from './task-dialog'
 
 type TaskCardProps = {
   task: Doc<'tasks'>
