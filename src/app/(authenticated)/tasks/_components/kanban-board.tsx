@@ -18,12 +18,14 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useMutation, usePreloadedQuery, useQuery, type Preloaded } from 'convex/react'
 import { PlusIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import { Doc, Id } from '../../../../../convex/_generated/dataModel'
 import KanbanColumn from './kanban-column'
 import TaskCard from './task-card'
+import TaskDialog from './task-dialog'
 
 type KanbanBoardProps = {
   preloadedCurrentWeekData: Preloaded<typeof api.tasks.getTasksForCurrentWeekKanban>
@@ -34,9 +36,12 @@ const KanbanBoard = ({ preloadedCurrentWeekData }: KanbanBoardProps) => {
   const subjects = useQuery(api.subjects.getSubjectsByUser, {})
   const updateTaskOrderAndStatus = useMutation(api.tasks.updateTaskOrderAndStatus)
   const reorderTasks = useMutation(api.tasks.reorderTasks)
+  const searchParams = useSearchParams()
 
   const [localTasks, setLocalTasks] = useState<Doc<'tasks'>[]>(currentWeekData?.tasks || [])
   const [activeTask, setActiveTask] = useState<Doc<'tasks'> | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogTaskId, setDialogTaskId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -53,6 +58,15 @@ const KanbanBoard = ({ preloadedCurrentWeekData }: KanbanBoardProps) => {
   if (currentWeekData && localTasks !== currentWeekData.tasks) {
     setLocalTasks(currentWeekData.tasks)
   }
+
+  // Handle URL parameter to open task dialog
+  useEffect(() => {
+    const taskId = searchParams.get('task')
+    if (taskId) {
+      setDialogTaskId(taskId)
+      setDialogOpen(true)
+    }
+  }, [searchParams])
 
   if (!currentWeekData) {
     return (
@@ -214,6 +228,22 @@ const KanbanBoard = ({ preloadedCurrentWeekData }: KanbanBoardProps) => {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Task Dialog */}
+      <TaskDialog 
+        taskId={dialogTaskId} 
+        open={dialogOpen} 
+        onOpenChange={(open) => {
+          setDialogOpen(open)
+          if (!open) {
+            setDialogTaskId(null)
+            // Remove the task parameter from URL when dialog closes
+            const url = new URL(window.location.href)
+            url.searchParams.delete('task')
+            window.history.replaceState({}, '', url.toString())
+          }
+        }} 
+      />
     </div>
   )
 }

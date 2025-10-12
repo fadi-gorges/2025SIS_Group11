@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useQuery } from 'convex/react'
+import { useRouter } from 'nextjs-toploader/app'
 import { api } from '../../../convex/_generated/api'
 import { Doc } from '../../../convex/_generated/dataModel'
 
@@ -29,6 +30,7 @@ interface SimpleCalendarProps {
 export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+  const router = useRouter()
   
   // Get all events for the current month (including assignments and tasks)
   const monthStart = startOfMonth(currentDate)
@@ -83,6 +85,17 @@ export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps)
       return 'outline'
     }
     return 'outline'
+  }
+
+  // Helper function to handle event click
+  const handleEventClick = (event: ExtendedCalendarEvent) => {
+    if (event.type === 'assessment' && event.originalId) {
+      // Navigate to assessment detail page
+      router.push(`/assessments/${event.originalId}`)
+    } else if (event.type === 'task' && event.originalId) {
+      // Navigate to tasks page with task ID in URL to open modal
+      router.push(`/tasks?task=${event.originalId}`)
+    }
   }
 
   const renderCalendar = () => {
@@ -209,7 +222,15 @@ export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps)
                     <div key={event._id} className="text-xs bg-background p-2 rounded border">
                       <div className="flex items-center gap-2 mb-1">
                         {getEventIcon(event)}
-                        <span className="font-medium">{event.name}</span>
+                        <span 
+                          className={cn(
+                            "font-medium",
+                            (event.type === 'assessment' || event.type === 'task') && "cursor-pointer hover:text-primary hover:underline"
+                          )}
+                          onClick={() => handleEventClick(event)}
+                        >
+                          {event.name}
+                        </span>
                         <Badge variant={getEventBadgeVariant(event)} className="text-xs">
                           {event.type === 'assessment' ? 'Assignment' : 
                            event.type === 'task' ? 'Task' : 'Event'}
