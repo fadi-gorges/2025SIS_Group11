@@ -37,9 +37,20 @@ export const createTask = mutation({
       await requireAuthAndOwnership(ctx, validation.data.subjectId as Id<'subjects'>) // subjectId validation
     }
 
+    // Get the maximum order for this user's tasks
+    const maxOrderTask = await ctx.db
+      .query('tasks')
+      .withIndex('by_user_and_order', (q) => q.eq('userId', userId))
+      .order('desc')
+      .first()
+
+    const newOrder = maxOrderTask ? maxOrderTask.order + 1 : 0
+
     return await ctx.db.insert('tasks', {
       ...validation.data,
       type: 'task',
+      subtasks: [],
+      order: newOrder,
       userId,
       subjectId: validation.data.subjectId as Id<'subjects'>,
       assessmentId: undefined,
@@ -120,6 +131,37 @@ export const getTasksByUser = query({
       // Name comparison
       return a.name.localeCompare(b.name)
     })
+  },
+})
+
+/**
+ * Get all tasks for a user ordered by order field (for timeline drag and drop)
+ */
+export const getTasksForTimeline = query({
+  args: {
+    search: v.optional(v.string()),
+  },
+  returns: v.array(taskObject),
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+    const { search } = args
+
+    const hasSearch = !!search && search.trim().length > 0
+
+    let results
+    if (hasSearch) {
+      // Use search index for name search
+      results = ctx.db
+        .query('tasks')
+        .withSearchIndex('search_name', (q) => q.search('name', search!.trim()).eq('userId', userId))
+    } else {
+      results = ctx.db.query('tasks').withIndex('by_user', (q) => q.eq('userId', userId))
+    }
+
+    const tasks = await results.collect()
+
+    // Sort by order field
+    return tasks.sort((a, b) => a.order - b.order)
   },
 })
 
@@ -267,7 +309,7 @@ export const updateTask = mutation({
 
     await ctx.db.patch(args.taskId, {
       ...validation.data,
-      weekId: validation.data as Id<'weeks'>,
+      weekId: validation.data.weekId as Id<'weeks'>,
       subjectId: task.assessmentId ? task.subjectId : (validation.data.subjectId as Id<'subjects'>),
       assessmentId: task.assessmentId,
     })
@@ -348,7 +390,7 @@ export const batchUpdateTasks = mutation({
 
         await ctx.db.patch(taskId, updateData)
         updatedCount++
-      } catch (error) {
+      } catch {
         // Skip tasks that don't belong to the user
         continue
       }
@@ -377,7 +419,7 @@ export const batchDeleteTasks = mutation({
         await requireAuthAndOwnership(ctx, taskId)
         await ctx.db.delete(taskId)
         deletedCount++
-      } catch (error) {
+      } catch {
         // Skip tasks that don't belong to the user or don't exist
         continue
       }
@@ -399,6 +441,15 @@ export const cloneTask = mutation({
   handler: async (ctx, args) => {
     const { data: originalTask, userId } = await requireAuthAndOwnership(ctx, args.taskId)
 
+    // Get the maximum order for this user's tasks
+    const maxOrderTask = await ctx.db
+      .query('tasks')
+      .withIndex('by_user_and_order', (q) => q.eq('userId', userId))
+      .order('desc')
+      .first()
+
+    const newOrder = maxOrderTask ? maxOrderTask.order + 1 : 0
+
     const clonedTaskData = {
       name: args.name || `${originalTask.name} (Copy)`,
       type: originalTask.type,
@@ -408,6 +459,8 @@ export const cloneTask = mutation({
       status: 'todo' as const, // Reset status for cloned task
       priority: originalTask.priority,
       reminderTime: originalTask.reminderTime,
+      subtasks: originalTask.subtasks,
+      order: newOrder,
       userId,
       subjectId: originalTask.subjectId,
       assessmentId: originalTask.assessmentId,
@@ -455,37 +508,151 @@ export const autoAssignTaskToWeek = mutation({
 })
 
 /**
- * Get tasks summary for dashboard
+ * Update task subtasks
  */
-export const getTasksSummary = query({
+export const updateTaskSubtasks = mutation({
+  args: {
+    taskId: v.id('tasks'),
+    subtasks: v.array(
+      v.object({
+        name: v.string(),
+        done: v.boolean(),
+      }),
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuthAndOwnership(ctx, args.taskId)
+    await ctx.db.patch(args.taskId, { subtasks: args.subtasks })
+    return null
+  },
+})
+
+/**
+ * Get tasks for the current week (for kanban board)
+ */
+export const getTasksForCurrentWeekKanban = query({
   args: {},
-  returns: v.object({
-    totalTasks: v.number(),
-    todoTasks: v.number(),
-    doingTasks: v.number(),
-    doneTasks: v.number(),
-    overdueTasks: v.number(),
-  }),
+  returns: v.union(
+    v.object({
+      currentWeek: v.object({
+        _id: v.id('weeks'),
+        _creationTime: v.number(),
+        name: v.string(),
+        startDate: v.number(),
+        endDate: v.number(),
+        isHoliday: v.boolean(),
+        current: v.boolean(),
+        userId: v.id('users'),
+      }),
+      tasks: v.array(taskObject),
+    }),
+    v.null(),
+  ),
   handler: async (ctx) => {
     const userId = await requireAuth(ctx)
-    const now = Date.now()
 
+    // Find the current week
+    const currentWeek = await ctx.db
+      .query('weeks')
+      .withIndex('by_user_and_current', (q) => q.eq('userId', userId).eq('current', true))
+      .first()
+
+    if (!currentWeek) {
+      return null
+    }
+
+    // Get tasks for the current week, ordered by their order field
     const tasks = await ctx.db
       .query('tasks')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .withIndex('by_user_and_week', (q) => q.eq('userId', userId).eq('weekId', currentWeek._id))
       .collect()
 
-    const todoTasks = tasks.filter((task) => task.status === 'todo').length
-    const doingTasks = tasks.filter((task) => task.status === 'doing').length
-    const doneTasks = tasks.filter((task) => task.status === 'done').length
-    const overdueTasks = tasks.filter((task) => task.dueDate && task.dueDate < now && task.status !== 'done').length
+    // Sort by order
+    const sortedTasks = tasks.sort((a, b) => a.order - b.order)
 
     return {
-      totalTasks: tasks.length,
-      todoTasks,
-      doingTasks,
-      doneTasks,
-      overdueTasks,
+      currentWeek,
+      tasks: sortedTasks,
     }
+  },
+})
+
+/**
+ * Update task order and status (for kanban drag and drop)
+ */
+export const updateTaskOrderAndStatus = mutation({
+  args: {
+    taskId: v.id('tasks'),
+    newStatus: taskFields.status,
+    newOrder: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuthAndOwnership(ctx, args.taskId)
+
+    await ctx.db.patch(args.taskId, {
+      status: args.newStatus,
+      order: args.newOrder,
+    })
+
+    return null
+  },
+})
+
+/**
+ * Reorder multiple tasks
+ */
+export const reorderTasks = mutation({
+  args: {
+    taskIds: v.array(v.id('tasks')),
+    startOrder: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuth(ctx)
+
+    // Update each task with its new order
+    for (let i = 0; i < args.taskIds.length; i++) {
+      const taskId = args.taskIds[i]
+
+      // Verify ownership
+      try {
+        await requireAuthAndOwnership(ctx, taskId)
+        await ctx.db.patch(taskId, { order: args.startOrder + i })
+      } catch {
+        // Skip tasks that don't belong to the user
+        continue
+      }
+    }
+
+    return null
+  },
+})
+
+/**
+ * Update task week and order (for timeline drag and drop)
+ */
+export const updateTaskWeekAndOrder = mutation({
+  args: {
+    taskId: v.id('tasks'),
+    weekId: v.optional(v.id('weeks')),
+    newOrder: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAuthAndOwnership(ctx, args.taskId)
+
+    // Validate week ownership if weekId is provided
+    if (args.weekId) {
+      await requireAuthAndOwnership(ctx, args.weekId)
+    }
+
+    await ctx.db.patch(args.taskId, {
+      weekId: args.weekId,
+      order: args.newOrder,
+    })
+
+    return null
   },
 })

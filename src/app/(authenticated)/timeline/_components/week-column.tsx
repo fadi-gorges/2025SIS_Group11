@@ -18,6 +18,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils/cn'
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useMutation } from 'convex/react'
 import { format } from 'date-fns'
 import { EditIcon, ListTodoIcon, MoreVerticalIcon, PlayCircleIcon, PlusIcon, TrashIcon } from 'lucide-react'
@@ -25,6 +27,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import { Doc } from '../../../../../convex/_generated/dataModel'
+import TaskDialog from '../../tasks/_components/task-dialog'
 import TaskFormSheet from '../../tasks/_components/task-form-sheet'
 import TaskItem from './task-item'
 import WeekFormDialog from './week-form-dialog'
@@ -38,14 +41,23 @@ type WeekColumnProps = {
 const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
 
   const startWeek = useMutation(api.weeks.startWeek)
   const deleteWeek = useMutation(api.weeks.deleteWeek)
+
+  const { setNodeRef, isOver } = useDroppable({
+    id: `week-${week._id}`,
+  })
 
   const totalTasks = tasks?.length
   const todoTasks = tasks?.filter((task) => task.status === 'todo').length
   const doingTasks = tasks?.filter((task) => task.status === 'doing').length
   const doneTasks = tasks?.filter((task) => task.status === 'done').length
+
+  // Sort tasks by order
+  const sortedTasks = tasks.sort((a, b) => a.order - b.order)
 
   const onStartWeek = async () => {
     const { tasksMovedCount } = await startWeek({ weekId: week._id })
@@ -59,12 +71,19 @@ const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
     setIsDeleteDialogOpen(false)
   }
 
+  const handleTaskClick = (task: Doc<'tasks'>) => {
+    setSelectedTaskId(task._id)
+    setIsTaskDialogOpen(true)
+  }
+
   return (
     <div className="w-full">
       <Card
+        ref={setNodeRef}
         className={cn(
-          'border-2',
+          'border-2 transition-colors',
           week.current ? (week.isHoliday ? 'border-amber-600/60' : 'border-primary/60') : 'border-transparent',
+          isOver && 'border-primary/60 bg-accent/30',
         )}
       >
         <CardHeader className="space-y-1">
@@ -143,14 +162,23 @@ const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
         </CardHeader>
         <Separator />
         <CardContent className="space-y-2 py-3">
-          {tasks && tasks.length > 0 ? (
-            tasks.map((t) => <TaskItem key={t._id} task={t} subject={subjects.find((s) => s._id === t.subjectId)} />)
-          ) : (
-            <div className="text-muted-foreground grid place-items-center rounded-md border border-dashed py-8 text-sm">
-              <ListTodoIcon className="mb-2 size-5" />
-              No tasks yet
-            </div>
-          )}
+          <SortableContext items={sortedTasks.map((t) => t._id)} strategy={verticalListSortingStrategy}>
+            {sortedTasks && sortedTasks.length > 0 ? (
+              sortedTasks.map((t) => (
+                <TaskItem
+                  key={t._id}
+                  task={t}
+                  subject={subjects.find((s) => s._id === t.subjectId)}
+                  onClick={handleTaskClick}
+                />
+              ))
+            ) : (
+              <div className="text-muted-foreground grid place-items-center rounded-md border border-dashed py-8 text-sm">
+                <ListTodoIcon className="mb-2 size-5" />
+                No tasks yet
+              </div>
+            )}
+          </SortableContext>
 
           {/* Task Creation Component */}
           <div className="mt-2">
@@ -165,6 +193,8 @@ const WeekColumn = ({ week, tasks, subjects }: WeekColumnProps) => {
       </Card>
 
       <WeekFormDialog open={isEditOpen} onOpenChange={setIsEditOpen} isHoliday={week.isHoliday} weekToEdit={week} />
+
+      <TaskDialog taskId={selectedTaskId} open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

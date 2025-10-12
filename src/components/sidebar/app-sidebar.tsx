@@ -9,6 +9,7 @@ import {
   NotebookPenIcon,
   Rows3Icon,
   SettingsIcon,
+  MessageSquareIcon,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -49,6 +50,11 @@ const data = {
       title: 'Tasks',
       url: '/tasks',
       icon: KanbanSquareIcon,
+    },
+    {
+      title: 'Chat',
+      url: '/chat',
+      icon: MessageSquareIcon,
     },
     {
       title: 'Settings',

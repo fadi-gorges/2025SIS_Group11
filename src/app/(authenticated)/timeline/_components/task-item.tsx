@@ -1,21 +1,29 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils/cn'
 import { taskPriorityMap, taskStatusMap, taskTypeMap } from '@/lib/utils/task-utils'
-import { BookIcon, CalendarIcon, CheckSquareIcon, SquareIcon } from 'lucide-react'
-import React, { useState } from 'react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { BookIcon, CalendarIcon } from 'lucide-react'
+import React from 'react'
 import { Doc } from '../../../../../convex/_generated/dataModel'
 
 type TaskItemProps = {
   task: Doc<'tasks'>
   subject?: { name: string; code?: string } | null
-  selected?: boolean
-  onToggle?: (selected: boolean) => void
+  onClick?: (task: Doc<'tasks'>) => void
 }
 
-const TaskItem = ({ task, subject, selected = false, onToggle }: TaskItemProps) => {
-  const [hover, setHover] = useState(false)
+const TaskItem = ({ task, subject, onClick }: TaskItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task._id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
 
   // Format due date to show day and month
   const formatDueDate = (timestamp: number) => {
@@ -28,25 +36,14 @@ const TaskItem = ({ task, subject, selected = false, onToggle }: TaskItemProps) 
 
   return (
     <div
-      className={cn(
-        'group bg-card hover:bg-accent/50 relative rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow]',
-        selected && 'ring-primary ring-2',
-      )}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="group bg-card hover:bg-accent/50 relative cursor-grab rounded-md border p-3 text-sm shadow-xs transition-[background,border,box-shadow] active:cursor-grabbing"
+      onClick={() => onClick?.(task)}
     >
-      <button
-        className={cn(
-          'absolute top-2 left-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100',
-          (hover || selected) && 'opacity-100',
-        )}
-        onClick={() => onToggle?.(!selected)}
-        aria-label={selected ? 'Deselect' : 'Select'}
-      >
-        {selected ? <CheckSquareIcon className="size-4" /> : <SquareIcon className="size-4" />}
-      </button>
-
-      <div className="pl-6">
+      <div>
         {/* Horizontal inline layout */}
         <div className="flex items-center gap-3 text-sm">
           {/* Task/Assessment Icon */}

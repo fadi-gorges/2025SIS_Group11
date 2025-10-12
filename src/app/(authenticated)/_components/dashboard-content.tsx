@@ -1,5 +1,6 @@
 'use client'
 
+import Heading from '@/components/page/heading'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,13 +9,29 @@ import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, FileTextIcon, Star, TrendingUp } from 'lucide-react'
-import { useMemo } from 'react'
-import { useQuery } from 'convex/react'
-import { api } from '../../../../convex/_generated/api'
-import { formatDate } from '@/lib/utils/date-utils'
+import { Preloaded, usePreloadedQuery } from 'convex/react'
+import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, FileTextIcon, KanbanSquareIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { api } from '../../../../convex/_generated/api'
+import { Doc } from '../../../../convex/_generated/dataModel'
+import TaskDialog from '../tasks/_components/task-dialog'
+
+type DashboardContentProps = {
+  preloadedSubjects: Preloaded<typeof api.subjects.getSubjectsByUser>
+  preloadedAssessments: Preloaded<typeof api.assessments.getAssessmentsByUser>
+  preloadedTasks: Preloaded<typeof api.tasks.getTasksForCurrentWeekKanban>
+  preloadedGrades: Preloaded<typeof api.grades.getGradesByUser>
+}
+
+const formatDue = (ts?: number) => {
+  if (!ts) return 'No due date'
+  const diff = ts - Date.now()
+  const days = Math.round(diff / (1000 * 60 * 60 * 24))
+  if (days === 0) return 'Due today'
+  if (days > 0) return `Due in ${days} day${days === 1 ? '' : 's'}`
+  return `${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`
+}
 
 const StatCard = ({ title, value, icon }: { title: string; value: string | number; icon: React.ReactNode }) => (
   <Card className="transition-shadow hover:shadow-md">
@@ -28,7 +45,7 @@ const StatCard = ({ title, value, icon }: { title: string; value: string | numbe
   </Card>
 )
 
-const PriorityBadge = ({ priority }: { priority: 'none' | 'low' | 'medium' | 'high' }) => {
+const PriorityBadge = ({ priority }: { priority: Doc<'tasks'>['priority'] }) => {
   const map = {
     none: { label: 'None', variant: 'secondary' as const },
     low: { label: 'Low', variant: 'outline' as const },
@@ -39,111 +56,69 @@ const PriorityBadge = ({ priority }: { priority: 'none' | 'low' | 'medium' | 'hi
   return <Badge variant={p.variant}>{p.label}</Badge>
 }
 
-const formatDue = (ts?: number) => {
-  if (!ts) return 'No due date'
-  const diff = ts - Date.now()
-  const days = Math.round(diff / (1000 * 60 * 60 * 24))
-  if (days === 0) return 'Due today'
-  if (days > 0) return `Due in ${days} day${days === 1 ? '' : 's'}`
-  return `${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`
-}
+const EmptyState = ({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ElementType
+  title: string
+  description?: string
+}) => (
+  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+    <div className="bg-muted/50 mb-4 rounded-full p-3">
+      <Icon className="text-muted-foreground h-6 w-6" />
+    </div>
+    <h3 className="mb-1 font-medium">{title}</h3>
+    {description && <p className="text-muted-foreground text-sm">{description}</p>}
+  </div>
+)
 
-const DashboardContent = () => {
-  const router = useRouter()
-  const dashboardData = useQuery(api.dashboard.getDashboardData, {})
-  
-  // Show loading state while data is being fetched
-  if (dashboardData === undefined) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="space-y-0 pb-2">
-                <div className="h-4 w-24 bg-muted rounded"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 w-16 bg-muted rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="grid gap-4 lg:grid-cols-7">
-          <Card className="lg:col-span-4 animate-pulse">
-            <CardHeader>
-              <div className="h-6 w-32 bg-muted rounded"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-muted rounded"></div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-3 animate-pulse">
-            <CardHeader>
-              <div className="h-6 w-24 bg-muted rounded"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-12 bg-muted rounded"></div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+const DashboardContent = ({
+  preloadedSubjects,
+  preloadedAssessments,
+  preloadedTasks,
+  preloadedGrades,
+}: DashboardContentProps) => {
+  const subjects = usePreloadedQuery(preloadedSubjects)
+  const assessments = usePreloadedQuery(preloadedAssessments)
+  const tasks = usePreloadedQuery(preloadedTasks)
+  const grades = usePreloadedQuery(preloadedGrades)
 
-  if (!dashboardData) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold">Unable to load dashboard data</h3>
-          <p className="text-muted-foreground">Please try refreshing the page.</p>
-        </div>
-      </div>
-    )
-  }
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
 
-  const { subjects, upcomingAssessments, tasksSummary, tasksByStatus, recentGrades, averageGrade } = dashboardData
+  const subjectMap = useMemo(() => {
+    return Object.fromEntries(subjects.map((s) => [s._id, s]))
+  }, [subjects])
 
-  // Create subject map for quick lookups
-  const subjectMap = useMemo(() => 
-    Object.fromEntries(subjects.map(s => [s._id, s])), 
-    [subjects]
+  const assessmentMap = useMemo(() => {
+    return Object.fromEntries(assessments.map((a) => [a._id, a]))
+  }, [assessments])
+
+  const upcoming = useMemo(
+    () => assessments.filter((a) => !a.complete).slice(0, 5), // Filter incomplete and take first 5
+    [assessments],
   )
 
-  // Create assessment map for task lookups
-  const assessmentMap = useMemo(() => 
-    Object.fromEntries(upcomingAssessments.map(a => [a._id, a])), 
-    [upcomingAssessments]
-  )
+  const tasksByStatus = useMemo(() => {
+    return {
+      todo: tasks?.tasks.filter((t) => t.status === 'todo'),
+      doing: tasks?.tasks.filter((t) => t.status === 'doing'),
+      done: tasks?.tasks.filter((t) => t.status === 'done'),
+    }
+  }, [tasks])
 
-  const taskProgress = tasksSummary.totalTasks 
-    ? Math.round((tasksSummary.doneTasks / tasksSummary.totalTasks) * 100) 
-    : 0
+  const completedTasks = tasksByStatus.done?.length ?? 0
+  const totalTasks = tasks?.tasks.length ?? 0
+  const taskProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0
 
   return (
     <div className="space-y-6">
       {/* Top row: heading and quick stats */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Plan, track, and ace your term.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.push('/calendar')}>
-            <CalendarDays className="mr-2 h-4 w-4" /> Calendar
-          </Button>
-          <Button size="sm" onClick={() => router.push('/tasks')}>New Task</Button>
-        </div>
-      </div>
+      <Heading title="Dashboard" description="Plan, track, and ace your term." />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           title="Active Subjects"
           value={subjects.length}
@@ -151,18 +126,13 @@ const DashboardContent = () => {
         />
         <StatCard
           title="Assessments Due"
-          value={upcomingAssessments.length}
+          value={assessments.filter((a) => !a.complete).length}
           icon={<FileTextIcon className="text-muted-foreground h-4 w-4" />}
         />
         <StatCard
           title="Tasks Completed"
-          value={`${tasksSummary.doneTasks}/${tasksSummary.totalTasks}`}
+          value={`${completedTasks}/${totalTasks}`}
           icon={<CheckCircle2 className="text-muted-foreground h-4 w-4" />}
-        />
-        <StatCard
-          title="Average Grade"
-          value={averageGrade !== null ? `${averageGrade}%` : '—'}
-          icon={<TrendingUp className="text-muted-foreground h-4 w-4" />}
         />
       </div>
 
@@ -174,45 +144,47 @@ const DashboardContent = () => {
               <CardTitle>Upcoming assessments</CardTitle>
               <p className="text-muted-foreground text-sm">Next deadlines and weights</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/assessments')}>
-              View all <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
+            <Link href="/assessments">
+              <Button variant="ghost" size="sm">
+                View all <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-4">
-                {upcomingAssessments.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileTextIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                    <p>No upcoming assessments</p>
-                  </div>
+                {upcoming.length === 0 ? (
+                  <EmptyState
+                    icon={FileTextIcon}
+                    title="No upcoming assessments"
+                    description="Create assessments to track your deadlines and progress"
+                  />
                 ) : (
-                  upcomingAssessments.map((assessment) => {
-                    const subject = subjectMap[assessment.subjectId]
+                  upcoming.map((a) => {
+                    const subject = subjectMap[a.subjectId]
                     return (
-                      <div 
-                        key={assessment._id} 
-                        className="hover:bg-accent/40 rounded-md border p-4 cursor-pointer transition-colors"
-                        onClick={() => router.push(`/assessments/${assessment._id}`)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl" aria-hidden>
-                                {assessment.icon}
-                              </span>
-                              <h3 className="leading-none font-medium">{assessment.name}</h3>
+                      <Link key={a._id} href={`/assessments/${a._id}`}>
+                        <div className="hover:bg-accent/40 cursor-pointer rounded-md border p-4 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl" aria-hidden>
+                                  {a.icon}
+                                </span>
+                                <h3 className="truncate leading-none font-medium">{a.name}</h3>
+                              </div>
+                              <p className="text-muted-foreground truncate text-sm">
+                                {subject?.code} • {subject?.name} •{' '}
+                                {a.contribution === 'group' ? 'Group' : 'Individual'}
+                              </p>
                             </div>
-                            <p className="text-muted-foreground text-sm">
-                              {subject?.code} • {subject?.name} • {assessment.contribution === 'group' ? 'Group' : 'Individual'}
-                            </p>
-                          </div>
-                          <div className="space-y-2 text-right">
-                            <Badge variant="secondary">{assessment.weight}%</Badge>
-                            <div className="text-muted-foreground text-xs">{formatDue(assessment.dueDate)}</div>
+                            <div className="ml-4 space-y-2 text-right">
+                              <Badge variant="secondary">{a.weight}%</Badge>
+                              <div className="text-muted-foreground text-xs">{formatDue(a.dueDate)}</div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     )
                   })
                 )}
@@ -228,17 +200,12 @@ const DashboardContent = () => {
               <CardTitle>Tasks overview</CardTitle>
               <p className="text-muted-foreground text-sm">Quick glance at your progress</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-sm font-medium">Overall progress</div>
-                <div className="flex items-center gap-2">
-                  <Progress value={taskProgress} className="w-40" />
-                  <span className="text-muted-foreground w-10 text-right text-sm">{taskProgress}%</span>
-                </div>
+            <div className="text-right">
+              <div className="text-sm font-medium">Overall progress</div>
+              <div className="flex items-center gap-2">
+                <Progress value={taskProgress} className="w-40" />
+                <span className="text-muted-foreground w-10 text-right text-sm">{taskProgress}%</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => router.push('/tasks')}>
-                View all <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -250,30 +217,35 @@ const DashboardContent = () => {
               </TabsList>
               {(['todo', 'doing', 'done'] as const).map((status) => (
                 <TabsContent key={status} value={status} className="space-y-3">
-                  {tasksByStatus[status].length === 0 ? (
-                    <div className="text-muted-foreground text-sm">No tasks here.</div>
+                  {!tasksByStatus[status]?.length ? (
+                    <EmptyState
+                      icon={KanbanSquareIcon}
+                      title={`No ${status === 'todo' ? 'pending' : status === 'doing' ? 'active' : 'completed'} tasks`}
+                      description="Tasks will appear here as you create them"
+                    />
                   ) : (
-                    tasksByStatus[status].slice(0, 3).map((task) => {
-                      const assessment = task.assessmentId ? assessmentMap[task.assessmentId] : null
-                      const subject = assessment ? subjectMap[assessment.subjectId] : null
+                    tasksByStatus[status]?.map((t) => {
+                      const a = t.assessmentId ? assessmentMap[t.assessmentId] : undefined
+                      const s = a ? subjectMap[a.subjectId] : t.subjectId ? subjectMap[t.subjectId] : undefined
                       return (
-                        <div 
-                          key={task._id} 
-                          className="flex items-center justify-between rounded-md border p-3 cursor-pointer hover:bg-accent/40 transition-colors"
-                          onClick={() => router.push('/tasks')}
+                        <div
+                          key={t._id}
+                          className="hover:bg-accent/40 flex cursor-pointer items-center justify-between rounded-md border p-3 transition-colors"
+                          onClick={() => {
+                            setSelectedTaskId(t._id)
+                            setIsTaskDialogOpen(true)
+                          }}
                         >
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              <PriorityBadge priority={task.priority} />
-                              <span className="truncate font-medium">{task.name}</span>
+                              <PriorityBadge priority={t.priority} />
+                              <span className="truncate font-medium">{t.name}</span>
                             </div>
                             <p className="text-muted-foreground mt-1 truncate text-xs">
-                              {assessment?.name} {subject ? `• ${subject.code}` : ''}
+                              {s ? `${s.name} • ${s.code}` : ''}
                             </p>
                           </div>
-                          <Button variant="ghost" size="icon" aria-label="open">
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                          <ChevronRight className="text-muted-foreground h-4 w-4 shrink-0" />
                         </div>
                       )
                     })
@@ -292,41 +264,51 @@ const DashboardContent = () => {
             <CardTitle>Recent grades</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {averageGrade !== null && (
-              <div className="bg-muted flex items-center justify-between rounded-md p-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Star className="h-4 w-4" />
-                  <span>Average</span>
-                </div>
-                <span className="font-semibold">{averageGrade}%</span>
-              </div>
-            )}
             <div className="space-y-3">
-              {recentGrades.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  <Star className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                  <p className="text-sm">No grades yet</p>
-                </div>
+              {grades.length === 0 ? (
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="No grades yet"
+                  description="Your grades will appear here once they're recorded"
+                />
               ) : (
-                recentGrades.map((grade) => {
-                  const assessment = upcomingAssessments.find(a => a._id === grade.assessmentId)
-                  const subject = assessment ? subjectMap[assessment.subjectId] : undefined
-                  return (
-                    <div 
-                      key={grade._id} 
-                      className="rounded-md border p-3 cursor-pointer hover:bg-accent/40 transition-colors"
-                      onClick={() => router.push(`/assessments/${grade.assessmentId}`)}
-                    >
+                grades.slice(0, 5).map((g) => {
+                  const a = g.assessmentId ? assessmentMap[g.assessmentId] : undefined
+                  const s = a ? subjectMap[a.subjectId] : g.subjectId ? subjectMap[g.subjectId] : undefined
+                  const content = (
+                    <div className="rounded-md border p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{grade.name || 'Unnamed Grade'}</div>
-                          <div className="text-muted-foreground truncate text-xs">
-                            {subject?.code} • {subject?.name}
-                          </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{g.name || a?.name || 'Grade'}</div>
+                          {s && (
+                            <div className="text-muted-foreground truncate text-xs">
+                              {s.code} • {s.name}
+                            </div>
+                          )}
                         </div>
-                        <Badge variant="secondary">{grade.grade}%</Badge>
+                        <Badge variant="secondary">{g.grade}%</Badge>
                       </div>
                     </div>
+                  )
+
+                  return g.assessmentId ? (
+                    <Link key={g._id} href={`/assessments/${g.assessmentId}`} className="block">
+                      <div className="hover:bg-accent/40 cursor-pointer rounded-md border p-3 transition-colors">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium">{g.name || a?.name || 'Grade'}</div>
+                            {s && (
+                              <div className="text-muted-foreground truncate text-xs">
+                                {s.code} • {s.name}
+                              </div>
+                            )}
+                          </div>
+                          <Badge variant="secondary">{g.grade}%</Badge>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div key={g._id}>{content}</div>
                   )
                 })
               )}
@@ -336,75 +318,74 @@ const DashboardContent = () => {
 
         <Card className="lg:col-span-4">
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Subjects</CardTitle>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/subjects')}>
-              View all <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
+            <CardTitle>Subjects</CardTitle>
+            <Link href="/subjects">
+              <Button variant="ghost" size="sm">
+                View all <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {subjects.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                  <p>No subjects yet</p>
-                  <p className="text-sm">Create your first subject to get started</p>
-                </div>
+                <EmptyState
+                  icon={BookOpen}
+                  title="No subjects yet"
+                  description="Add your subjects to start organizing your study plan"
+                />
               ) : (
-                subjects.map((subject) => {
-                  const subjectAssessments = upcomingAssessments.filter(a => a.subjectId === subject._id)
-                  const completed = subjectAssessments.filter(a => a.complete).length
-                  const progress = subjectAssessments.length
-                    ? Math.round((completed / subjectAssessments.length) * 100)
+                subjects.map((s) => {
+                  const subjectAssessments = assessments.filter((a) => a.subjectId === s._id)
+                  const allSubjectAssessments = [...subjectAssessments]
+                  const completed = allSubjectAssessments.filter((a) => a.complete).length
+                  const progress = allSubjectAssessments.length
+                    ? Math.round((completed / allSubjectAssessments.length) * 100)
                     : 0
-                  const initials = (subject.code ?? subject.name)
+                  const initials = (s.code ?? s.name)
                     .split(' ')
                     .map((w) => w[0])
                     .join('')
                     .slice(0, 2)
                     .toUpperCase()
                   return (
-                    <div 
-                      key={subject._id} 
-                      className="rounded-md border p-4 cursor-pointer hover:bg-accent/40 transition-colors"
-                      onClick={() => router.push(`/subjects/${subject._id}`)}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback>{initials}</AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <div className="truncate font-medium">
-                              {subject.code} • {subject.name}
-                            </div>
-                            <div className="text-muted-foreground truncate text-xs">
-                              Coordinator: {subject.coordinatorName ?? '—'}
+                    <Link key={s._id} href={`/subjects/${s._id}`}>
+                      <div className="hover:bg-accent/40 cursor-pointer rounded-md border p-4 transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarFallback>{initials}</AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate font-medium">
+                                {s.code} • {s.name}
+                              </div>
+                              <div className="text-muted-foreground truncate text-xs">
+                                Coordinator: {s.coordinatorName ?? '—'}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="w-40">
-                          <div className="mb-1 flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span>{progress}%</span>
+                          <div className="w-40 shrink-0">
+                            <div className="mb-1 flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span>{progress}%</span>
+                            </div>
+                            <Progress value={progress} />
                           </div>
-                          <Progress value={progress} />
+                        </div>
+                        <Separator className="my-3" />
+                        <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+                          <span className="inline-flex items-center gap-1">
+                            <FileTextIcon className="h-3.5 w-3.5" /> {allSubjectAssessments.length} assessments
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> {completed} completed
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <CalendarDays className="h-3.5 w-3.5" /> {s.term ?? '—'}
+                          </span>
                         </div>
                       </div>
-                      <Separator className="my-3" />
-                      <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
-                        <span className="inline-flex items-center gap-1">
-                          <FileTextIcon className="h-3.5 w-3.5" /> {subjectAssessments.length} assessments
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> {completed} completed
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarDays className="h-3.5 w-3.5" /> Term {subject.term}
-                        </span>
-                      </div>
-                    </div>
+                    </Link>
                   )
                 })
               )}
@@ -412,6 +393,9 @@ const DashboardContent = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Task Dialog */}
+      <TaskDialog taskId={selectedTaskId} open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen} />
     </div>
   )
 }

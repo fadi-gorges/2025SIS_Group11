@@ -87,6 +87,13 @@ export const taskFields = {
   status: v.union(...taskStatus.map((status) => v.literal(status))),
   priority: v.union(...taskPriority.map((priority) => v.literal(priority))),
   reminderTime: v.optional(v.number()),
+  subtasks: v.array(
+    v.object({
+      name: v.string(),
+      done: v.boolean(),
+    }),
+  ),
+  order: v.number(),
   userId: v.id('users'),
   subjectId: v.optional(v.id('subjects')),
   assessmentId: v.optional(v.id('assessments')),
@@ -200,6 +207,7 @@ export default defineSchema({
     .index('by_subject', ['subjectId'])
     .index('by_assessment', ['assessmentId'])
     .index('by_due_date', ['dueDate'])
+    .index('by_user_and_order', ['userId', 'order'])
     .searchIndex('search_name', { searchField: 'name', filterFields: ['userId'] }),
 
   // Calendar events - represents calendar events and appointments

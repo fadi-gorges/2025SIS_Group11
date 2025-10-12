@@ -10,9 +10,14 @@ const TimelinePage = async ({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) => {
   const token = await convexAuthNextjsToken()
+  const params = await searchParams
 
   const preloadedWeeks = await preloadQuery(api.weeks.getWeeksByUser, { includeHolidays: true }, { token })
-  const preloadedTasks = await preloadQuery(api.tasks.getTasksByUser, {}, { token })
+  const preloadedTasks = await preloadQuery(
+    api.tasks.getTasksForTimeline,
+    { search: typeof params.tasks === 'string' ? params.tasks : undefined },
+    { token },
+  )
   const preloadedSubjects = await preloadQuery(api.subjects.getSubjectsByUser, {}, { token })
 
   return (
