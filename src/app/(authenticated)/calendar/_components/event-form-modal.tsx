@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -25,6 +26,11 @@ const eventFormSchema = z.object({
   name: z.string().min(1, 'Event name is required').max(100, 'Event name must be less than 100 characters'),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
   date: z.date().optional(),
+  recurrence: z.object({
+    type: z.enum(['none', 'daily', 'weekly', 'monthly', 'yearly']),
+    interval: z.number().min(1).max(52).optional(),
+    endDate: z.date().optional(),
+  }).optional(),
 })
 
 type EventFormData = z.infer<typeof eventFormSchema>
@@ -46,6 +52,11 @@ export function EventFormModal({ open, onOpenChange, selectedDate, onEventCreate
       name: '',
       description: '',
       date: selectedDate,
+      recurrence: {
+        type: 'none',
+        interval: 1,
+        endDate: undefined,
+      },
     },
   })
 
@@ -63,10 +74,19 @@ export function EventFormModal({ open, onOpenChange, selectedDate, onEventCreate
         name: data.name,
         description: data.description,
         date: data.date.getTime(),
-        time: data.date ? data.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
+        time: data.date ? data.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
+        recurrence: data.recurrence && data.recurrence.type !== 'none' ? {
+          type: data.recurrence.type,
+          interval: data.recurrence.interval,
+          endDate: data.recurrence.endDate?.getTime(),
+        } : undefined,
       })
       
-      toast.success('Event created successfully!')
+      toast.success(
+        data.recurrence && data.recurrence.type !== 'none' 
+          ? 'Recurring event created successfully!' 
+          : 'Event created successfully!'
+      )
       form.reset()
       onOpenChange(false)
       onEventCreated?.()
@@ -154,6 +174,77 @@ export function EventFormModal({ open, onOpenChange, selectedDate, onEventCreate
                 </FormItem>
               )}
             />
+
+            {/* Recurrence */}
+            <FormField
+              control={form.control}
+              name="recurrence.type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Repeat</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select recurrence" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">No repeat</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Recurrence Interval */}
+            {form.watch('recurrence.type') && form.watch('recurrence.type') !== 'none' && (
+              <FormField
+                control={form.control}
+                name="recurrence.interval"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Repeat every</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="52"
+                        placeholder="1"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Recurrence End Date */}
+            {form.watch('recurrence.type') && form.watch('recurrence.type') !== 'none' && (
+              <FormField
+                control={form.control}
+                name="recurrence.endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End date (optional)</FormLabel>
+                    <FormControl>
+                      <DateTimePicker
+                        value={field.value}
+                        onChange={(date: Date | undefined) => field.onChange(date)}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter>
               <Button

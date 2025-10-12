@@ -65,6 +65,104 @@ export const getEventsInRange = query({
 })
 
 /**
+ * Get all calendar items (events + task deadlines + assessment deadlines) for a date range
+ */
+export const getCalendarItemsInRange = query({
+  args: {
+    startDate: v.number(),
+    endDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
+    // Get calendar events
+    const events = await ctx.db
+      .query('calendarEvents')
+      .withIndex('by_user_and_date', (q) => q.eq('userId', userId).gte('date', args.startDate))
+      .filter((q) => q.lte(q.field('date'), args.endDate))
+      .collect()
+
+    // Get tasks with due dates in range
+    const tasks = await ctx.db
+      .query('tasks')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => 
+        q.and(
+          q.neq(q.field('dueDate'), undefined),
+          q.gte(q.field('dueDate'), args.startDate),
+          q.lte(q.field('dueDate'), args.endDate)
+        )
+      )
+      .collect()
+
+    // Get assessments with due dates in range
+    const assessments = await ctx.db
+      .query('assessments')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => 
+        q.and(
+          q.neq(q.field('dueDate'), undefined),
+          q.gte(q.field('dueDate'), args.startDate),
+          q.lte(q.field('dueDate'), args.endDate)
+        )
+      )
+      .collect()
+
+    // Transform all items into a unified format
+    const calendarItems = [
+      // Calendar events
+      ...events.map(event => ({
+        id: event._id,
+        type: 'event' as const,
+        name: event.name,
+        description: event.description,
+        date: event.date,
+        time: event.time,
+        source: 'calendar' as const,
+        priority: 'none' as const,
+        status: 'scheduled' as const,
+      })),
+      
+      // Task deadlines
+      ...tasks.map(task => ({
+        id: task._id,
+        type: 'task' as const,
+        name: `${task.name} (Due)`,
+        description: task.description,
+        date: task.dueDate!,
+        time: undefined,
+        source: 'tasks' as const,
+        priority: task.priority,
+        status: task.status,
+      })),
+      
+      // Assessment deadlines
+      ...assessments.map(assessment => ({
+        id: assessment._id,
+        type: 'assessment' as const,
+        name: `${assessment.name} (Due)`,
+        description: assessment.description,
+        date: assessment.dueDate!,
+        time: undefined,
+        source: 'assessments' as const,
+        priority: 'high' as const, // Assessments are typically high priority
+        status: assessment.complete ? 'completed' : 'pending',
+      })),
+    ]
+
+    // Sort by date, then by priority
+    return calendarItems.sort((a, b) => {
+      const dateComparison = a.date - b.date
+      if (dateComparison !== 0) return dateComparison
+      
+      // Priority order: high > medium > low > none
+      const priorityOrder = { high: 3, medium: 2, low: 1, none: 0 }
+      return priorityOrder[b.priority] - priorityOrder[a.priority]
+    })
+  },
+})
+
+/**
  * Get calendar events for a specific month
  */
 export const getEventsForMonth = query({
@@ -86,6 +184,99 @@ export const getEventsForMonth = query({
   },
 })
 
+/**
+ * Get upcoming calendar items (events + tasks + assessments) within the next 3 days
+ */
+export const getUpcomingItems = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx)
+
+    const now = new Date()
+    const threeDaysFromNow = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000))
+    const startTime = now.getTime()
+    const endTime = threeDaysFromNow.getTime()
+
+    // Get calendar events
+    const events = await ctx.db
+      .query('calendarEvents')
+      .withIndex('by_user_and_date', (q) => q.eq('userId', userId).gte('date', startTime))
+      .filter((q) => q.lte(q.field('date'), endTime))
+      .collect()
+
+    // Get tasks with due dates in next 3 days
+    const tasks = await ctx.db
+      .query('tasks')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => 
+        q.and(
+          q.neq(q.field('dueDate'), undefined),
+          q.gte(q.field('dueDate'), startTime),
+          q.lte(q.field('dueDate'), endTime)
+        )
+      )
+      .collect()
+
+    // Get assessments with due dates in next 3 days
+    const assessments = await ctx.db
+      .query('assessments')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => 
+        q.and(
+          q.neq(q.field('dueDate'), undefined),
+          q.gte(q.field('dueDate'), startTime),
+          q.lte(q.field('dueDate'), endTime)
+        )
+      )
+      .collect()
+
+    // Transform all items into a unified format
+    const upcomingItems = [
+      // Calendar events
+      ...events.map(event => ({
+        id: event._id,
+        type: 'event' as const,
+        name: event.name,
+        description: event.description,
+        date: event.date,
+        time: event.time,
+        source: 'calendar' as const,
+        priority: 'none' as const,
+        status: 'scheduled' as const,
+      })),
+      
+      // Task deadlines
+      ...tasks.map(task => ({
+        id: task._id,
+        type: 'task' as const,
+        name: `${task.name} (Due)`,
+        description: task.description,
+        date: task.dueDate!,
+        time: undefined,
+        source: 'tasks' as const,
+        priority: task.priority,
+        status: task.status,
+      })),
+      
+      // Assessment deadlines
+      ...assessments.map(assessment => ({
+        id: assessment._id,
+        type: 'assessment' as const,
+        name: `${assessment.name} (Due)`,
+        description: assessment.description,
+        date: assessment.dueDate!,
+        time: undefined,
+        source: 'assessments' as const,
+        priority: 'high' as const,
+        status: assessment.complete ? 'completed' : 'pending',
+      })),
+    ]
+
+    // Sort by date (earliest first)
+    return upcomingItems.sort((a, b) => a.date - b.date)
+  },
+})
+
 // =============================================================================
 // MUTATIONS
 // =============================================================================
@@ -99,16 +290,111 @@ export const createEvent = mutation({
     description: v.optional(v.string()),
     date: v.number(),
     time: v.optional(v.string()),
+    recurrence: v.optional(v.object({
+      type: v.union(v.literal('none'), v.literal('daily'), v.literal('weekly'), v.literal('monthly'), v.literal('yearly')),
+      interval: v.optional(v.number()),
+      endDate: v.optional(v.number()),
+      daysOfWeek: v.optional(v.array(v.number())),
+    })),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx)
 
-    return await ctx.db.insert('calendarEvents', {
-      ...args,
+    const eventData = {
+      name: args.name,
+      description: args.description,
+      date: args.date,
+      time: args.time,
       userId,
+      recurrence: args.recurrence,
+    }
+
+    // If no recurrence, create a single event
+    if (!args.recurrence || args.recurrence.type === 'none') {
+      return await ctx.db.insert('calendarEvents', eventData)
+    }
+
+    // Create recurring events
+    const parentEventId = await ctx.db.insert('calendarEvents', {
+      ...eventData,
+      recurrence: args.recurrence,
     })
+
+    // Generate recurring instances
+    const instances = generateRecurringInstances(args.date, args.recurrence)
+    
+    for (const instanceDate of instances) {
+      await ctx.db.insert('calendarEvents', {
+        ...eventData,
+        date: instanceDate,
+        parentEventId,
+      })
+    }
+
+    return parentEventId
   },
 })
+
+/**
+ * Generate recurring event instances based on recurrence rules
+ */
+function generateRecurringInstances(startDate: number, recurrence: {
+  type: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+  interval?: number
+  endDate?: number
+  daysOfWeek?: number[]
+}): number[] {
+  // If no recurrence, return empty array
+  if (recurrence.type === 'none') {
+    return []
+  }
+  const instances: number[] = []
+  const start = new Date(startDate)
+  const interval = recurrence.interval || 1
+  const endDate = recurrence.endDate ? new Date(recurrence.endDate) : new Date(start.getTime() + (365 * 24 * 60 * 60 * 1000)) // Default to 1 year
+  
+  let current = new Date(start)
+  
+  switch (recurrence.type) {
+    case 'daily':
+      while (current <= endDate) {
+        current.setDate(current.getDate() + interval)
+        if (current <= endDate) {
+          instances.push(current.getTime())
+        }
+      }
+      break
+      
+    case 'weekly':
+      while (current <= endDate) {
+        current.setDate(current.getDate() + (7 * interval))
+        if (current <= endDate) {
+          instances.push(current.getTime())
+        }
+      }
+      break
+      
+    case 'monthly':
+      while (current <= endDate) {
+        current.setMonth(current.getMonth() + interval)
+        if (current <= endDate) {
+          instances.push(current.getTime())
+        }
+      }
+      break
+      
+    case 'yearly':
+      while (current <= endDate) {
+        current.setFullYear(current.getFullYear() + interval)
+        if (current <= endDate) {
+          instances.push(current.getTime())
+        }
+      }
+      break
+  }
+  
+  return instances
+}
 
 /**
  * Update a calendar event

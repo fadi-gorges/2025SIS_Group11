@@ -108,6 +108,14 @@ export const calendarEventFields = {
   date: v.number(), // timestamp
   time: v.optional(v.string()), // formatted time string like "14:30"
   userId: v.id('users'),
+  // Recurrence fields
+  recurrence: v.optional(v.object({
+    type: v.union(v.literal('none'), v.literal('daily'), v.literal('weekly'), v.literal('monthly'), v.literal('yearly')),
+    interval: v.optional(v.number()), // e.g., every 2 weeks
+    endDate: v.optional(v.number()), // when recurrence ends
+    daysOfWeek: v.optional(v.array(v.number())), // for weekly recurrence (0=Sunday, 1=Monday, etc.)
+  })),
+  parentEventId: v.optional(v.id('calendarEvents')), // for recurring event instances
 } as const
 
 /**
