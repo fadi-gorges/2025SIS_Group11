@@ -86,6 +86,80 @@ export const getEventsForMonth = query({
   },
 })
 
+/**
+ * Get all calendar-related events for a date range (includes assignments and tasks)
+ */
+export const getAllCalendarEvents = query({
+  args: {
+    startDate: v.number(),
+    endDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx)
+
+    // Get regular calendar events
+    const calendarEvents = await ctx.db
+      .query('calendarEvents')
+      .withIndex('by_user_and_date', (q) => q.eq('userId', userId).gte('date', args.startDate))
+      .filter((q) => q.lte(q.field('date'), args.endDate))
+      .collect()
+
+    // Get assessments with due dates in range
+    const assessments = await ctx.db
+      .query('assessments')
+      .withIndex('by_user_and_due_date', (q) => q.eq('userId', userId).gte('dueDate', args.startDate))
+      .filter((q) => q.and(
+        q.lte(q.field('dueDate'), args.endDate),
+        q.neq(q.field('dueDate'), null)
+      ))
+      .collect()
+
+    // Get tasks with due dates in range
+    const tasks = await ctx.db
+      .query('tasks')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => q.and(
+        q.neq(q.field('dueDate'), null),
+        q.gte(q.field('dueDate'), args.startDate),
+        q.lte(q.field('dueDate'), args.endDate)
+      ))
+      .collect()
+
+    // Transform assessments and tasks into calendar event format
+    const assessmentEvents = assessments.map(assessment => ({
+      _id: `assessment_${assessment._id}`,
+      _creationTime: assessment._creationTime,
+      name: `${assessment.name} (Assignment)`,
+      description: assessment.description || `Assignment for ${assessment.subjectId}`,
+      date: assessment.dueDate!,
+      time: undefined,
+      userId: assessment.userId,
+      type: 'assessment' as const,
+      originalId: assessment._id,
+      icon: assessment.icon,
+      complete: assessment.complete,
+    }))
+
+    const taskEvents = tasks.map(task => ({
+      _id: `task_${task._id}`,
+      _creationTime: task._creationTime,
+      name: `${task.name} (Task)`,
+      description: task.description || `Task due`,
+      date: task.dueDate!,
+      time: undefined,
+      userId: task.userId,
+      type: 'task' as const,
+      originalId: task._id,
+      priority: task.priority,
+      status: task.status,
+    }))
+
+    // Combine all events and sort by date
+    const allEvents = [...calendarEvents, ...assessmentEvents, ...taskEvents]
+    return allEvents.sort((a, b) => a.date - b.date)
+  },
+})
+
 // =============================================================================
 // MUTATIONS
 // =============================================================================

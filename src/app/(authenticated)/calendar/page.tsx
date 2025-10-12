@@ -11,12 +11,20 @@ import { ICalImportModal } from './_components/ical-import-modal'
 import { Doc } from '../../../../convex/_generated/dataModel'
 
 type CalendarEvent = Doc<'calendarEvents'>
+type ExtendedCalendarEvent = CalendarEvent & {
+  type?: 'assessment' | 'task'
+  originalId?: string
+  icon?: string
+  complete?: boolean
+  priority?: string
+  status?: string
+}
 
 export default function CalendarPage() {
   const [showEventForm, setShowEventForm] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-  const [selectedEvents, setSelectedEvents] = useState<CalendarEvent[]>([])
+  const [selectedEvents, setSelectedEvents] = useState<ExtendedCalendarEvent[]>([])
 
   const handleAddEvent = () => {
     setShowEventForm(true)
@@ -26,7 +34,7 @@ export default function CalendarPage() {
     setShowImportModal(true)
   }
 
-  const handleDateSelect = (date: Date, events: CalendarEvent[]) => {
+  const handleDateSelect = (date: Date, events: ExtendedCalendarEvent[]) => {
     setSelectedDate(date)
     setSelectedEvents(events)
   }
@@ -48,7 +56,7 @@ export default function CalendarPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <Heading 
             title="Calendar" 
-            description="View your schedule and upcoming events" 
+            description="View your schedule, assignments, tasks, and upcoming events" 
           />
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleImportCalendar}>
@@ -69,24 +77,24 @@ export default function CalendarPage() {
         {/* Calendar */}
         <SimpleCalendar onDateSelect={handleDateSelect} />
         
-        {/* Placeholder for future features */}
+        {/* Calendar features info */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div className="p-4 border rounded-lg bg-muted/50">
-            <h3 className="font-medium mb-2">Quick Stats</h3>
+            <h3 className="font-medium mb-2">Calendar Events</h3>
             <p className="text-sm text-muted-foreground">
-              Calendar statistics and insights will appear here.
+              Add custom events, appointments, and reminders to your calendar.
             </p>
           </div>
           <div className="p-4 border rounded-lg bg-muted/50">
-            <h3 className="font-medium mb-2">Upcoming Events</h3>
+            <h3 className="font-medium mb-2">Assignments</h3>
             <p className="text-sm text-muted-foreground">
-              Your upcoming events and deadlines will be shown here.
+              Assignment due dates automatically appear on your calendar with completion status.
             </p>
           </div>
           <div className="p-4 border rounded-lg bg-muted/50">
-            <h3 className="font-medium mb-2">Recent Activity</h3>
+            <h3 className="font-medium mb-2">Tasks</h3>
             <p className="text-sm text-muted-foreground">
-              Recent calendar activity and changes will be displayed here.
+              Task deadlines are displayed with priority levels and completion status.
             </p>
           </div>
         </div>

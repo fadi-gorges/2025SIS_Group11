@@ -2,15 +2,24 @@
 
 import { useState } from 'react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isSameDay, addDays } from 'date-fns'
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { ChevronLeftIcon, ChevronRightIcon, BookOpenIcon, CheckSquareIcon, CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Doc } from '../../../convex/_generated/dataModel'
 
 type CalendarEvent = Doc<'calendarEvents'>
+type ExtendedCalendarEvent = CalendarEvent & {
+  type?: 'assessment' | 'task'
+  originalId?: string
+  icon?: string
+  complete?: boolean
+  priority?: string
+  status?: string
+}
 
 interface SimpleCalendarProps {
   className?: string
@@ -21,10 +30,10 @@ export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   
-  // Get all events for the current month
+  // Get all events for the current month (including assignments and tasks)
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
-  const events = useQuery(api.calendarEvents.getEventsInRange, {
+  const events = useQuery(api.calendarEvents.getAllCalendarEvents, {
     startDate: monthStart.getTime(),
     endDate: monthEnd.getTime(),
   })
@@ -40,7 +49,7 @@ export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps)
   }
 
   // Helper function to get events for a specific date
-  const getEventsForDate = (date: Date): CalendarEvent[] => {
+  const getEventsForDate = (date: Date): ExtendedCalendarEvent[] => {
     if (!events) return []
     
     const targetDate = new Date(date)
@@ -50,7 +59,30 @@ export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps)
       const eventDate = new Date(event.date)
       eventDate.setHours(0, 0, 0, 0)
       return eventDate.getTime() === targetDate.getTime()
-    })
+    }) as ExtendedCalendarEvent[]
+  }
+
+  // Helper function to get event icon
+  const getEventIcon = (event: ExtendedCalendarEvent) => {
+    if (event.type === 'assessment') {
+      return <BookOpenIcon className="h-3 w-3" />
+    } else if (event.type === 'task') {
+      return <CheckSquareIcon className="h-3 w-3" />
+    }
+    return <CalendarIcon className="h-3 w-3" />
+  }
+
+  // Helper function to get event badge variant
+  const getEventBadgeVariant = (event: ExtendedCalendarEvent) => {
+    if (event.type === 'assessment') {
+      return event.complete ? 'secondary' : 'default'
+    } else if (event.type === 'task') {
+      if (event.status === 'completed') return 'secondary'
+      if (event.priority === 'high') return 'destructive'
+      if (event.priority === 'medium') return 'default'
+      return 'outline'
+    }
+    return 'outline'
   }
 
   const renderCalendar = () => {
@@ -101,10 +133,24 @@ export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps)
               <div className="text-sm font-medium mb-1">
                 {format(day, 'd')}
               </div>
-              {/* Event count indicator */}
+              {/* Event indicators */}
               {eventCount > 0 && (
-                <div className="text-xs text-primary font-medium">
-                  {eventCount} event{eventCount !== 1 ? 's' : ''}
+                <div className="space-y-1">
+                  {(() => {
+                    const eventsForDay = getEventsForDate(day)
+                    const eventTypes = eventsForDay.reduce((acc, event) => {
+                      const type = event.type === 'assessment' ? 'assignment' : 
+                                   event.type === 'task' ? 'task' : 'event'
+                      acc[type] = (acc[type] || 0) + 1
+                      return acc
+                    }, {} as Record<string, number>)
+                    
+                    return Object.entries(eventTypes).map(([type, count]) => (
+                      <div key={type} className="text-xs text-primary font-medium">
+                        {count} {type}{count !== 1 ? 's' : ''}
+                      </div>
+                    ))
+                  })()}
                 </div>
               )}
             </div>
@@ -161,12 +207,24 @@ export function SimpleCalendar({ className, onDateSelect }: SimpleCalendarProps)
                 <div className="mt-2 space-y-2">
                   {dayEvents.map(event => (
                     <div key={event._id} className="text-xs bg-background p-2 rounded border">
-                      <div className="font-medium">{event.name}</div>
+                      <div className="flex items-center gap-2 mb-1">
+                        {getEventIcon(event)}
+                        <span className="font-medium">{event.name}</span>
+                        <Badge variant={getEventBadgeVariant(event)} className="text-xs">
+                          {event.type === 'assessment' ? 'Assignment' : 
+                           event.type === 'task' ? 'Task' : 'Event'}
+                        </Badge>
+                      </div>
                       {event.time && (
                         <div className="text-muted-foreground">{event.time}</div>
                       )}
                       {event.description && (
                         <div className="text-muted-foreground mt-1">{event.description}</div>
+                      )}
+                      {event.type === 'task' && event.priority && event.priority !== 'none' && (
+                        <div className="text-muted-foreground mt-1">
+                          Priority: {event.priority}
+                        </div>
                       )}
                     </div>
                   ))}
