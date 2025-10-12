@@ -1,6 +1,6 @@
 'use client'
 
-import DateTimeInput from '@/components/datetime/date-time-input'
+import DateTimePicker from '@/components/datetime/date-time-picker'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -125,7 +125,7 @@ export function EventFormModal({ open, onOpenChange, selectedDate, onEventCreate
                 <FormItem>
                   <FormLabel>Date & Time</FormLabel>
                   <FormControl>
-                    <DateTimeInput
+                    <DateTimePicker
                       value={field.value}
                       onChange={(date: Date | undefined) => field.onChange(date)}
                       className="w-full"
