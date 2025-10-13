@@ -8,39 +8,6 @@ import { action } from './_generated/server'
 import { assessmentFields, subjectFields } from './schema'
 import { VALIDATION_LIMITS } from './validation'
 
-/**
- * Convert Windows file path to file:// URL format
- * Converts C:\Users\... to file:///C:/Users/...
- * Handles various Windows path formats and edge cases
- */
-function convertWindowsPathToFileUrl(filePath: string): string {
-  // Validate input
-  if (!filePath || typeof filePath !== 'string') {
-    return filePath
-  }
-  
-  // Check if it's already a file:// URL
-  if (filePath.startsWith('file://')) {
-    return filePath
-  }
-  
-  // Check if it's a Windows path (starts with drive letter and colon)
-  if (/^[A-Za-z]:/.test(filePath)) {
-    // Convert backslashes to forward slashes and add file:// prefix
-    const normalizedPath = filePath.replace(/\\/g, '/')
-    return `file:///${normalizedPath}`
-  }
-  
-  // Check for UNC paths (\\server\share\path)
-  if (filePath.startsWith('\\\\')) {
-    const normalizedPath = filePath.replace(/\\/g, '/')
-    return `file://${normalizedPath}`
-  }
-  
-  // For other paths, assume they're already in the correct format
-  return filePath
-}
-
 const extractionSchema = z.object({
   subject: z.object({
     name: z.string().describe('The title of the academic subject or course. Do NOT include the code.'),
@@ -107,73 +74,77 @@ export const parseSubject = action({
     ),
   }),
   handler: async (ctx, args) => {
-    try {
-      console.log('parseSubject handler started with fileId:', args.fileId)
-      
-      // Get the file directly from Convex storage instead of using URL
-      console.log('Getting file directly from storage...')
-      let fileBytes
-      try {
-        const fileBlob = await ctx.storage.get(args.fileId)
-        if (!fileBlob) {
-          throw new ConvexError('File not found in storage')
-        }
-        // Convert Blob to ArrayBuffer
-        const fileBuffer = await fileBlob.arrayBuffer()
-        fileBytes = new Uint8Array(fileBuffer)
-        console.log('File retrieved successfully from storage, size:', fileBytes.length)
-      } catch (storageError) {
-        console.error('Error getting file from storage:', storageError)
-        throw new ConvexError(`Failed to get file from storage: ${storageError instanceof Error ? storageError.message : 'Unknown error'}`)
-      }
-
-    // File download successful
-
-    // Validate file content
-    if (fileBytes.length === 0) {
-      throw new ConvexError('Downloaded file is empty')
+    // Get the PDF file from Convex storage
+    const fileUrl = await ctx.storage.getUrl(args.fileId)
+    if (!fileUrl) {
+      throw new ConvexError('File not found')
     }
+
+    // Download the file
+    const response = await fetch(fileUrl)
+    if (!response.ok) {
+      throw new ConvexError('Failed to download file')
+    }
+
+    const fileBuffer = await response.arrayBuffer()
+    const fileBytes = new Uint8Array(fileBuffer)
 
     // Initialize Google Gemini model
     const model = google('gemini-2.5-flash')
 
     // Use AI to extract structured data from PDF
-    let result
-    try {
-      result = await generateObject({
-        model,
-        schema: extractionSchema,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Extract subject and assessment information from this PDF document. Return the data in the exact format specified by the schema.`,
-              },
-              {
-                type: 'file',
-                data: fileBytes,
-                mediaType: 'application/pdf',
-              },
-            ],
+    const result = await generateObject({
+      model,
+      schema: extractionSchema,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `You are an expert at extracting academic subject information from university subject outlines.
+
+Extract comprehensive information from the provided PDF document. The schema defines exactly what fields to extract and their requirements.
+
+VALIDATION RULES:
+- Use empty strings for missing optional fields
+- Total assessment weights should equal 100%
+- Icon selection guide:
+  📝 Essays, reports, written work
+  📚 Exams, tests, reading assignments
+  🎤 Presentations, oral assessments
+  💻 Programming, digital projects
+  🎨 Creative work, design projects
+  🧪 Lab work, experiments
+  🌐 Online submissions, web-based
+  🎭 Performance, practical demonstrations
+
+Extract all available information while ensuring assessment weights sum to exactly 100%.`,
+            },
+            {
+              type: 'file',
+              data: fileBytes,
+              mediaType: 'application/pdf',
+            },
+          ],
+        },
+      ],
+      temperature: 0.1,
+      providerOptions: {
+        google: {
+          thinkingConfig: {
+            thinkingBudget: 0,
           },
-        ],
-        temperature: 0.1,
-      })
-    } catch (aiError) {
-      throw new ConvexError(`AI processing failed: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}`)
-    }
+        },
+      },
+    })
 
     const extractedData = result.object
+    console.log(extractedData)
 
     return {
       subject: extractedData.subject,
       assessments: extractedData.assessments,
-    }
-    } catch (error) {
-      console.error('parseSubject handler error:', error)
-      throw new ConvexError(`parseSubject failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   },
 })
