@@ -1,3 +1,4 @@
+import Heading from '@/components/page/heading'
 import SidebarPage from '@/components/sidebar/sidebar-page'
 import { convexAuthNextjsToken } from '@convex-dev/auth/nextjs/server'
 import { preloadQuery } from 'convex/nextjs'

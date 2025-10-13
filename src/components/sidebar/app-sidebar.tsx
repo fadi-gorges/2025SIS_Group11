@@ -2,6 +2,7 @@
 
 import {
   BookOpenIcon,
+  CalendarIcon,
   FileTextIcon,
   KanbanSquareIcon,
   LayoutDashboardIcon,
@@ -24,6 +25,11 @@ const data = {
       title: 'Dashboard',
       url: '/',
       icon: LayoutDashboardIcon,
+    },
+    {
+      title: 'Calendar',
+      url: '/calendar',
+      icon: CalendarIcon,
     },
     {
       title: 'Subjects',
