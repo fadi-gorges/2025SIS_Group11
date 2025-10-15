@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils/cn";
-import { Copy, ExternalLink, Link2, Loader2, Paperclip, Plus, Search, Send, X, PanelLeft } from "lucide-react";
+import { Copy, ExternalLink, Link2, Loader2, Paperclip, Plus, Search, Send, X, PanelLeft, Edit2, Check, Upload } from "lucide-react";
 
 type MessageRole = "user" | "assistant";
 
@@ -42,7 +42,7 @@ type Citation = {
   snippet?: string;
 };
 
-type MessageStatus = "sending" | "sent" | "failed";
+type MessageStatus = "sending" | "sent" | "failed" | "responding";
 
 type Message = {
   id: string;
@@ -51,6 +51,8 @@ type Message = {
   citations?: Citation[];
   createdAt?: number; // epoch ms
   status?: MessageStatus;
+  editedAt?: number; // epoch ms
+  isEditing?: boolean;
 };
 
 const mockSubjects = [
@@ -79,7 +81,7 @@ const mockMessages: Message[] = [
     id: "m3",
     role: "assistant",
     content:
-      "We covered QuickSort, MergeSort, and HeapSort.\n\n```ts\nfunction quickSort(arr: number[]): number[] {\n  if (arr.length < 2) return arr;\n  const pivot = arr[Math.floor(arr.length / 2)];\n  const left = arr.filter(n => n < pivot);\n  const mid = arr.filter(n => n === pivot);\n  const right = arr.filter(n => n > pivot);\n  return [...quickSort(left), ...mid, ...quickSort(right)];\n}\n```\n\nThe average complexity is $O(n\\log n)$.",
+      "Here are the main sorting algorithms from CS101:\n\n**QuickSort** - O(n log n) average, O(n²) worst case\n**MergeSort** - O(n log n) guaranteed, stable\n**HeapSort** - O(n log n) always, in-place\n\nEach has different trade-offs for space, stability, and performance. Need more details on any specific algorithm?",
     citations: [
       {
         id: "c1",
@@ -198,88 +200,211 @@ function formatTime(ts?: number) {
   return `${hh}:${mm}`;
 }
 
-function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (id: string) => void }) {
+function MessageBubble({ 
+  message, 
+  onRetry, 
+  onEdit, 
+  onSaveEdit, 
+  onCancelEdit
+}: { 
+  message: Message; 
+  onRetry?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onSaveEdit?: (id: string, newContent: string) => void;
+  onCancelEdit?: (id: string) => void;
+}) {
+  const [editContent, setEditContent] = useState(message.content);
+  const [isHovered, setIsHovered] = useState(false);
+
   useEffect(() => {
     try {
       (window as any).Prism?.highlightAll?.();
     } catch {}
   }, [message.content]);
 
+  useEffect(() => {
+    setEditContent(message.content);
+  }, [message.content]);
+
   const isUser = message.role === "user";
   const timeString = formatTime(message.createdAt);
+  const editedTimeString = message.editedAt ? formatTime(message.editedAt) : null;
+
+  const handleSaveEdit = () => {
+    if (onSaveEdit && editContent.trim() !== message.content) {
+      onSaveEdit(message.id, editContent.trim());
+    } else if (onCancelEdit) {
+      onCancelEdit(message.id);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === "Escape") {
+      if (onCancelEdit) onCancelEdit(message.id);
+    }
+  };
 
   return (
     <div
       className={cn(
-        "flex w-full gap-3 items-start",
+        "flex w-full gap-3 items-start group",
         isUser ? "justify-end" : "justify-start"
       )}
       role="listitem"
       aria-label={isUser ? "User message" : "Assistant message"}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={cn("max-w-[80%] sm:max-w-[70%] lg:max-w-[55%] inline-block", isUser ? "order-2" : "order-1")}> 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Card className={cn(isUser ? "bg-primary text-primary-foreground" : "bg-card", "shadow-sm w-fit max-w-full p-0")}> 
-              <CardContent className="p-2 sm:p-3 text-sm leading-relaxed">
-                <div className="space-y-3 break-words whitespace-pre-wrap">
-                  {renderContentWithCode(message.content)}
-                </div>
-                {message.citations && message.citations.length > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Drawer>
-                  <DrawerTrigger asChild>
-                    <Button size="sm" variant={isUser ? "secondary" : "outline"} aria-label="View citations">
-                      <Link2 className="mr-2 h-4 w-4" /> Citations ({message.citations.length})
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent className="max-h-[85vh]">
-                    <DrawerHeader>
-                      <DrawerTitle>Citations</DrawerTitle>
-                    </DrawerHeader>
-                    <div className="px-6 pb-6 space-y-4 overflow-y-auto">
-                      {message.citations.map((c) => (
-                        <div key={c.id} className="rounded-md border p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="font-medium">{c.title}</div>
-                            {c.url && (
-                              <Link href={c.url} target="_blank" aria-label="Open source">
-                                <Button variant="ghost" size="icon">
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                            )}
-                          </div>
-                          {c.snippet && <p className="mt-2 text-sm text-muted-foreground">{c.snippet}</p>}
-                        </div>
-                      ))}
-                      <div className="pt-2">
-                        <DrawerClose asChild>
-                          <Button variant="secondary" className="w-full">Close</Button>
-                        </DrawerClose>
+      <div className={cn("max-w-[80%] sm:max-w-[70%] lg:max-w-[55%] inline-block relative", isUser ? "order-2 pb-8" : "order-1")}> 
+        <div className="space-y-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Card className={cn(
+                isUser ? "bg-primary text-primary-foreground" : "bg-card", 
+                "shadow-sm w-fit max-w-full p-0 transition-all duration-300",
+                message.status === "sending" && "animate-pulse",
+                message.status === "failed" && "animate-bounce",
+                message.status === "responding" && "animate-pulse",
+                message.isEditing && "ring-2 ring-blue-500",
+                // Dynamic vibration effect for new messages (only for user messages)
+                message.status === "sent" && message.role === "user" && message.createdAt && (Date.now() - message.createdAt) < 2000 && "animate-pulse"
+              )}> 
+                <CardContent className="p-2 sm:p-3 text-sm leading-relaxed">
+                  {message.isEditing ? (
+                    <div className="space-y-3">
+                      <Textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="min-h-[100px] resize-none"
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={handleSaveEdit} className="h-8">
+                          <Check className="h-4 w-4 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => onCancelEdit?.(message.id)} className="h-8">
+                          <X className="h-4 w-4 mr-1" />
+                          Cancel
+                        </Button>
                       </div>
                     </div>
-                  </DrawerContent>
-                </Drawer>
-                    {/* Status badges */}
-                    {message.status === "sending" && (
-                      <Badge variant={isUser ? "secondary" : "outline"}>Sending…</Badge>
-                    )}
-                    {message.status === "failed" && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive">Failed</Badge>
-                        {onRetry && (
-                          <Button size="sm" variant={isUser ? "secondary" : "outline"} onClick={() => onRetry(message.id)}>Retry</Button>
+                  ) : (
+                    <>
+                      {message.status === "responding" ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                            <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+                          </div>
+                          <span className="text-sm">Thinking...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 break-words whitespace-pre-wrap">
+                          {renderContentWithCode(message.content)}
+                        </div>
+                      )}
+                      {message.citations && message.citations.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <Drawer>
+                            <DrawerTrigger asChild>
+                              <Button size="sm" variant={isUser ? "secondary" : "outline"} aria-label="View citations">
+                                <Link2 className="mr-2 h-4 w-4" /> Citations ({message.citations.length})
+                              </Button>
+                            </DrawerTrigger>
+                            <DrawerContent className="max-h-[85vh]">
+                              <DrawerHeader>
+                                <DrawerTitle>Citations</DrawerTitle>
+                              </DrawerHeader>
+                              <div className="px-6 pb-6 space-y-4 overflow-y-auto">
+                                {message.citations.map((c) => (
+                                  <div key={c.id} className="rounded-md border p-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="font-medium">{c.title}</div>
+                                      {c.url && (
+                                        <Link href={c.url} target="_blank" aria-label="Open source">
+                                          <Button variant="ghost" size="icon">
+                                            <ExternalLink className="h-4 w-4" />
+                                          </Button>
+                                        </Link>
+                                      )}
+                                    </div>
+                                    {c.snippet && <p className="mt-2 text-sm text-muted-foreground">{c.snippet}</p>}
+                                  </div>
+                                ))}
+                                <div className="pt-2">
+                                  <DrawerClose asChild>
+                                    <Button variant="secondary" className="w-full">Close</Button>
+                                  </DrawerClose>
+                                </div>
+                              </div>
+                            </DrawerContent>
+                          </Drawer>
+                        </div>
+                      )}
+
+                      {/* Status badges */}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {message.status === "sending" && (
+                          <Badge variant={isUser ? "secondary" : "outline"}>Sending…</Badge>
+                        )}
+                        {message.status === "responding" && (
+                          <Badge variant="outline" className="text-xs">
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Responding...
+                          </Badge>
+                        )}
+                        {message.status === "failed" && (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="destructive">Failed</Badge>
+                            {onRetry && (
+                              <Button size="sm" variant={isUser ? "secondary" : "outline"} onClick={() => onRetry(message.id)}>Retry</Button>
+                            )}
+                          </div>
+                        )}
+                        {message.editedAt && (
+                          <Badge variant="outline" className="text-xs">
+                            Edited {editedTimeString}
+                          </Badge>
                         )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TooltipTrigger>
-          <TooltipContent>{timeString}</TooltipContent>
-        </Tooltip>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-center">
+                <div>{timeString}</div>
+                {editedTimeString && <div className="text-xs text-muted-foreground">Edited: {editedTimeString}</div>}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Message actions - positioned absolutely underneath the message bubble */}
+          {isUser && isHovered && !message.isEditing && (
+            <div className={cn(
+              "absolute flex items-center gap-1 transition-all duration-200 z-10",
+              isUser ? "right-0" : "left-0"
+            )}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onEdit?.(message.id)}
+                className="h-8 px-2 text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm"
+                aria-label="Edit message"
+              >
+                <Edit2 className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -287,12 +412,22 @@ function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (id: 
 
 function renderContentWithCode(text: string) {
   const parts = text.split(/```/g);
-  if (parts.length === 1) return <p>{text}</p>;
+  if (parts.length === 1) {
+    // No code blocks, just render with basic markdown
+    return <div className="space-y-2">{renderMarkdown(text)}</div>;
+  }
+  
   const nodes: any[] = [];
   for (let i = 0; i < parts.length; i++) {
     const chunk = parts[i];
     if (i % 2 === 0) {
-      if (chunk.trim()) nodes.push(<p key={`t-${i}`}>{chunk}</p>);
+      if (chunk.trim()) {
+        nodes.push(
+          <div key={`t-${i}`} className="space-y-2">
+            {renderMarkdown(chunk)}
+          </div>
+        );
+      }
     } else {
       const [maybeLang, ...codeLines] = chunk.split("\n");
       const lang = maybeLang.trim().length <= 10 ? maybeLang.trim() : "";
@@ -311,6 +446,35 @@ function renderContentWithCode(text: string) {
   return <div className="space-y-3">{nodes}</div>;
 }
 
+function renderMarkdown(text: string) {
+  // Split by lines and process each line
+  const lines = text.split('\n');
+  const elements: any[] = [];
+  
+  lines.forEach((line, index) => {
+    if (line.trim() === '') {
+      elements.push(<br key={`br-${index}`} />);
+      return;
+    }
+    
+    // Process bold text **text**
+    const processedLine = line.split(/(\*\*[^*]+\*\*)/g).map((part, partIndex) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={`bold-${index}-${partIndex}`}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+    
+    elements.push(
+      <p key={`line-${index}`} className="leading-relaxed">
+        {processedLine}
+      </p>
+    );
+  });
+  
+  return elements;
+}
+
 export default function ChatPage() {
   usePrismHighlighting();
   useKatex();
@@ -324,6 +488,8 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // desktop/tablet collapse
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false); // mobile drawer
   const [showScrollLatest, setShowScrollLatest] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const containerRef = useAutoScroll([messages.length]);
   useEffect(() => {
@@ -367,27 +533,45 @@ export default function ChatPage() {
   }
 
   function handleSend() {
-    if (!input.trim()) return;
+    if (!input.trim() || isProcessing) return;
+    
+    setIsProcessing(true);
     const id = crypto.randomUUID();
     const newMessage: Message = { id, role: "user", content: input, createdAt: Date.now(), status: "sending" };
     setMessages((m) => [...m, newMessage]);
     setInput("");
+    
     // Mock delivery
     setTimeout(() => {
       setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, status: "sent" } : msg)));
+      
+      // Add responding status message
+      const respondingId = crypto.randomUUID();
+      setMessages((m) => [
+        ...m,
+        {
+          id: respondingId,
+          role: "assistant",
+          content: "",
+          createdAt: Date.now(),
+          status: "responding",
+        },
+      ]);
+      
       // Mock assistant reply
       setTimeout(() => {
         setMessages((m) => [
-          ...m,
+          ...m.filter(msg => msg.id !== respondingId), // Remove responding message
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: "(Mock) Thanks! I'll think about it and get back with details.",
+            content: "Here are the main sorting algorithms from CS101:\n\n**QuickSort** - O(n log n) average, O(n²) worst case\n**MergeSort** - O(n log n) guaranteed, stable\n**HeapSort** - O(n log n) always, in-place\n\nEach has different trade-offs for space, stability, and performance. Need more details on any specific algorithm?",
             createdAt: Date.now(),
             status: "sent",
           },
         ]);
-      }, 400);
+        setIsProcessing(false); // Re-enable input after response
+      }, 1500); // Longer delay to show responding status
     }, 600);
   }
 
@@ -397,6 +581,106 @@ export default function ChatPage() {
       setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, status: "sent" } : msg)));
     }, 500);
   }
+
+  function editMessage(id: string) {
+    // Find the index of the message being edited
+    const messageIndex = messages.findIndex(msg => msg.id === id);
+    if (messageIndex === -1) return;
+    
+    // Remove all messages after the edited message and set editing state
+    setMessages((m) => {
+      const messagesUpToEdit = m.slice(0, messageIndex + 1);
+      return messagesUpToEdit.map((msg) => 
+        msg.id === id ? { ...msg, isEditing: true } : msg
+      );
+    });
+  }
+
+  function saveEditMessage(id: string, newContent: string) {
+    setMessages((m) => m.map((msg) => 
+      msg.id === id 
+        ? { ...msg, content: newContent, isEditing: false, editedAt: Date.now() }
+        : msg
+    ));
+    
+    // Trigger a new response after editing
+    setIsProcessing(true);
+    
+    // Add responding status message
+    const respondingId = crypto.randomUUID();
+    setMessages((m) => [
+      ...m,
+      {
+        id: respondingId,
+        role: "assistant",
+        content: "",
+        createdAt: Date.now(),
+        status: "responding",
+      },
+    ]);
+    
+    // Mock assistant reply
+    setTimeout(() => {
+      setMessages((m) => [
+        ...m.filter(msg => msg.id !== respondingId), // Remove responding message
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Here are the main sorting algorithms from CS101:\n\n**QuickSort** - O(n log n) average, O(n²) worst case\n**MergeSort** - O(n log n) guaranteed, stable\n**HeapSort** - O(n log n) always, in-place\n\nEach has different trade-offs for space, stability, and performance. Need more details on any specific algorithm?",
+          createdAt: Date.now(),
+          status: "sent",
+        },
+      ]);
+      setIsProcessing(false); // Re-enable input after response
+    }, 1500);
+  }
+
+  function cancelEditMessage(id: string) {
+    setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, isEditing: false } : msg)));
+  }
+
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    files.forEach((file) => {
+      const id = Math.random().toString(36).slice(2);
+      const newItem: UploadItem = { 
+        id, 
+        name: file.name, 
+        progress: 0, 
+        status: "uploading" 
+      };
+      setUploads((u) => [...u, newItem]);
+      
+      // Simulate upload progress
+      const interval = setInterval(() => {
+        setUploads((prev) => {
+          const next = prev.map((it): UploadItem => {
+            if (it.id !== id) return it;
+            const nextProgress = Math.min(100, it.progress + 15);
+            const nextStatus: UploadItem["status"] = nextProgress >= 100 ? "done" : "uploading";
+            return { ...it, progress: nextProgress, status: nextStatus };
+          });
+          return next;
+        });
+      }, 400);
+      setTimeout(() => clearInterval(interval), 400 * 8);
+    });
+  };
 
   // Subject accents
   const subjectAccentMap: Record<string, string> = {
@@ -463,7 +747,15 @@ export default function ChatPage() {
       )}
 
       {/* Main panel */}
-      <main className="flex-1 flex flex-col">
+      <main 
+        className={cn(
+          "flex-1 flex flex-col relative transition-all duration-300",
+          isDragOver && "bg-blue-50 dark:bg-blue-950/20"
+        )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {/* Header */}
         <div className={cn("flex flex-col gap-3 border-b p-4", "bg-gradient-to-r", accent)}>
           <div className="flex items-center justify-between gap-2">
@@ -519,10 +811,32 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* Drag and drop overlay */}
+        {isDragOver && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm">
+            <div className="text-center p-8 rounded-lg border-2 border-dashed border-blue-400 bg-white/80 dark:bg-gray-900/80">
+              <Upload className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-bounce" />
+              <p className="text-lg font-medium text-blue-700 dark:text-blue-300">
+                Drop files here to upload
+              </p>
+              <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                PDF, Images, Documents, and more
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div ref={containerRef} className="relative flex-1 overflow-y-auto p-4 space-y-4" role="list" aria-label="Messages">
           {messages.map((m) => (
-            <MessageBubble key={m.id} message={m} onRetry={retryMessage} />
+            <MessageBubble 
+              key={m.id} 
+              message={m} 
+              onRetry={retryMessage}
+              onEdit={editMessage}
+              onSaveEdit={saveEditMessage}
+              onCancelEdit={cancelEditMessage}
+            />
           ))}
           {showScrollLatest && (
             <div className="pointer-events-none sticky bottom-3 flex justify-center">
@@ -565,7 +879,13 @@ export default function ChatPage() {
           <div className="flex items-end gap-2">
             <Popover>
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="icon" aria-label="Attach">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon" 
+                  aria-label="Attach"
+                  disabled={isProcessing}
+                >
                   <Paperclip className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
@@ -587,42 +907,78 @@ export default function ChatPage() {
               <Label htmlFor="chat-input" className="sr-only">Message</Label>
               <Textarea
                 id="chat-input"
-                placeholder="Ask a question…"
+                placeholder={isProcessing ? "Processing your message..." : "Ask a question…"}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && !isProcessing) {
                     e.preventDefault();
                     handleSend();
                   }
                 }}
                 className="min-h-[72px] resize-y"
                 aria-label="Message composer"
+                disabled={isProcessing}
               />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => setInput((t) => t + " Summarize this.")}>Summarize</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setInput((t) => t + " Summarize this.")}
+                      disabled={isProcessing}
+                    >
+                      Summarize
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>Append a quick action</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => setInput((t) => t + " Generate outline.")}>Outline</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setInput((t) => t + " Generate outline.")}
+                      disabled={isProcessing}
+                    >
+                      Outline
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>Append a quick action</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => setInput((t) => t + " Show references.")}>References</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setInput((t) => t + " Show references.")}
+                      disabled={isProcessing}
+                    >
+                      References
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>Append a quick action</TooltipContent>
                 </Tooltip>
               </div>
             </div>
 
-            <Button onClick={handleSend} aria-label="Send message">
-              <Send className="mr-2 h-4 w-4" /> Send
+            <Button 
+              onClick={handleSend} 
+              disabled={isProcessing || !input.trim()}
+              aria-label="Send message"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send
+                </>
+              )}
             </Button>
           </div>
         </div>
