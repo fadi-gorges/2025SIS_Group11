@@ -16,6 +16,7 @@ import type {
 import type * as assessments from "../assessments.js";
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
+import type * as calendarEvents from "../calendarEvents.js";
 import type * as files from "../files.js";
 import type * as grades from "../grades.js";
 import type * as http from "../http.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   assessments: typeof assessments;
   auth: typeof auth;
   authHelpers: typeof authHelpers;
+  calendarEvents: typeof calendarEvents;
   files: typeof files;
   grades: typeof grades;
   http: typeof http;

@@ -100,6 +100,25 @@ export const taskFields = {
 } as const
 
 /**
+ * Calendar event field definitions
+ */
+export const calendarEventFields = {
+  name: v.string(),
+  description: v.optional(v.string()),
+  date: v.number(), // timestamp
+  time: v.optional(v.string()), // formatted time string like "14:30"
+  userId: v.id('users'),
+  // Recurrence fields
+  recurrence: v.optional(v.object({
+    type: v.union(v.literal('none'), v.literal('daily'), v.literal('weekly'), v.literal('monthly'), v.literal('yearly')),
+    interval: v.optional(v.number()), // e.g., every 2 weeks
+    endDate: v.optional(v.number()), // when recurrence ends
+    daysOfWeek: v.optional(v.array(v.number())), // for weekly recurrence (0=Sunday, 1=Monday, etc.)
+  })),
+  parentEventId: v.optional(v.id('calendarEvents')), // for recurring event instances
+} as const
+
+/**
  * Complete object schemas with system fields for use in Convex functions
  */
 export const userObject = v.object({
@@ -136,6 +155,12 @@ export const taskObject = v.object({
   _id: v.id('tasks'),
   _creationTime: v.number(),
   ...taskFields,
+})
+
+export const calendarEventObject = v.object({
+  _id: v.id('calendarEvents'),
+  _creationTime: v.number(),
+  ...calendarEventFields,
 })
 
 // =============================================================================
@@ -191,5 +216,12 @@ export default defineSchema({
     .index('by_assessment', ['assessmentId'])
     .index('by_due_date', ['dueDate'])
     .index('by_user_and_order', ['userId', 'order'])
+    .searchIndex('search_name', { searchField: 'name', filterFields: ['userId'] }),
+
+  // Calendar events - represents calendar events and appointments
+  calendarEvents: defineTable(calendarEventFields)
+    .index('by_user', ['userId'])
+    .index('by_user_and_date', ['userId', 'date'])
+    .index('by_date', ['date'])
     .searchIndex('search_name', { searchField: 'name', filterFields: ['userId'] }),
 })
